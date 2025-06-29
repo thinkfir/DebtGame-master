@@ -43,6 +43,9 @@ let stocksData = {};
 // Player's portfolio: { symbol: { quantity: int, avgPrice: float } }
 let playerPortfolio = {};
 
+// Max inventory for stocks
+const STOCK_MAX_INVENTORY = 30; // Max 30 shares per stock type
+
 // Buttons specific to stock market screen
 let btnNextDay, btnMoveRegion, btnWallet;
 let stockTiles = []; // Array of objects for clickable stock tiles
@@ -53,14 +56,18 @@ let btnBackToMain; // Declared globally for access
 
 // --- Mafia Wars Variables ---
 const mafiaLocations = ['New York', 'Los Angeles', 'Chicago', 'Miami', 'Houston', 'Denver'];
-const contrabandTypes = ['Weed', 'Coke', 'Acid', 'Heroin', 'Meth']; // Renamed from drugTypes
+// Replaced actual drugs with fictional ones
+const contrabandTypes = ['Bliss Dust', 'Shadow Bloom', 'Viper Venom', 'Crimson Haze', 'Starlight Shard'];
 let currentMafiaLocation = 'New York';
-let mafiaContrabandPrices = {}; // { 'Weed': 20, 'Coke': 2000, ... }
-let mafiaPlayerInventory = {}; // { 'Weed': 0, 'Coke': 5, ... }
+let mafiaContrabandPrices = {}; // { 'Bliss Dust': 20, 'Shadow Bloom': 2000, ... }
+let mafiaPlayerInventory = {}; // { 'Bliss Dust': 0, 'Shadow Bloom': 5, ... }
 let mafiaBuySellQuantity = ""; // Input for buy/sell in Mafia Wars
 let selectedContraband = null; // Currently selected contraband for buy/sell operations
 let lastMafiaPriceUpdateTime = 0; // Timestamp for last Mafia price update
 const MAFIA_PRICE_UPDATE_INTERVAL = 15000; // Update prices every 15 seconds (simulating "by minute")
+
+// Max inventory for contraband
+const MAFIA_MAX_INVENTORY_PER_ITEM = 30; // Max 30 units per contraband type
 
 // Define fixed travel costs for Mafia Wars locations
 const MAFIA_TRAVEL_COSTS = {
@@ -300,8 +307,22 @@ function mousePressed() {
 
         if (selectedContraband && mafiaBuySellQuantity !== "" && !isNaN(int(mafiaBuySellQuantity))) {
             const qty = int(mafiaBuySellQuantity);
-            // This needs to be explicitly handled in mousePressed.
-            // The drawing part here only sets up the buttons.
+            // Check if the buy with quantity button was pressed
+            const buyWithQtyBtn = { x: inputX + inputWidth + padding, y: inputY, width: buttonWidth, height: inputHeight };
+            if (isMouseOver(buyWithQtyBtn)) { // FIXED: Added calls to handleBuySellContraband
+                handleBuySellContraband(selectedContraband, 'buy', qty);
+                mafiaBuySellQuantity = "";
+                selectedContraband = null; // Deselect after action
+                return;
+            }
+            // Check if the sell with quantity button was pressed
+            const sellWithQtyBtn = { x: buyWithQtyBtn.x + buyWithQtyBtn.width + padding / 2, y: inputY, width: buttonWidth, height: inputHeight };
+            if (isMouseOver(sellWithQtyBtn)) { // FIXED: Added calls to handleBuySellContraband
+                handleBuySellContraband(selectedContraband, 'sell', qty);
+                mafiaBuySellQuantity = "";
+                selectedContraband = null; // Deselect after action
+                return;
+            }
         }
         // If clicking on a table row (not the buttons), select that contraband for input
         else {
@@ -553,23 +574,23 @@ function generateMafiaPrices(location) {
         let basePrice;
         // Base price ranges for different contraband types
         switch (item) {
-            case 'Weed': basePrice = random(10, 50); break;
-            case 'Coke': basePrice = random(1000, 5000); break;
-            case 'Acid': basePrice = random(200, 800); break;
-            case 'Heroin': basePrice = random(5000, 15000); break;
-            case 'Meth': basePrice = random(500, 2000); break;
+            case 'Bliss Dust': basePrice = random(10, 50); break;
+            case 'Shadow Bloom': basePrice = random(1000, 5000); break;
+            case 'Viper Venom': basePrice = random(200, 800); break;
+            case 'Crimson Haze': basePrice = random(5000, 15000); break;
+            case 'Starlight Shard': basePrice = random(500, 2000); break;
             default: basePrice = random(50, 200);
         }
 
         // Location-specific price adjustments
         if (location === 'New York') {
-            if (item === 'Weed') basePrice *= random(0.8, 1.2); // Fluctuation
-            if (item === 'Coke') basePrice *= random(1.1, 1.5); // Higher
+            if (item === 'Bliss Dust') basePrice *= random(0.8, 1.2); // Fluctuation
+            if (item === 'Shadow Bloom') basePrice *= random(1.1, 1.5); // Higher
         } else if (location === 'Los Angeles') {
-            if (item === 'Acid') basePrice *= random(0.7, 1.1); // Lower
-            if (item === 'Meth') basePrice *= random(1.0, 1.3); // Higher
+            if (item === 'Viper Venom') basePrice *= random(0.7, 1.1); // Lower
+            if (item === 'Starlight Shard') basePrice *= random(1.0, 1.3); // Higher
         } else if (location === 'Chicago') {
-            if (item === 'Heroin') basePrice *= random(0.9, 1.3); // Moderate
+            if (item === 'Crimson Haze') basePrice *= random(0.9, 1.3); // Moderate
         }
         // Add more location-specific logic as needed
 
@@ -584,32 +605,45 @@ function generateMafiaPrices(location) {
 }
 
 function handleBuySellContraband(item, type, quantity) {
+    // Ensure quantity is a valid number
+    quantity = int(quantity);
     if (quantity <= 0 || isNaN(quantity)) {
         addGameMessage("Enter a valid quantity.", 'error');
         return;
     }
+
     const price = mafiaContrabandPrices[item];
     const cost = price * quantity;
+    const currentInventory = mafiaPlayerInventory[item] || 0;
 
     if (type === 'buy') {
-        if (gameMoney >= cost) {
-            gameMoney -= cost;
-            mafiaPlayerInventory[item] += quantity;
-            addGameMessage(`Acquired ${quantity} ${item} for $${cost.toFixed(2)}.`, 'success');
-            updateMoney(0); // Trigger display update
-        } else {
+        // Check if player has enough money
+        if (gameMoney < cost) {
             addGameMessage("Not enough money for that acquisition!", 'error');
+            return;
         }
+        // Check if buying this quantity exceeds inventory limit
+        if (currentInventory + quantity > MAFIA_MAX_INVENTORY_PER_ITEM) {
+            addGameMessage(`Cannot carry more than ${MAFIA_MAX_INVENTORY_PER_ITEM} units of ${item}.`, 'error');
+            return;
+        }
+
+        gameMoney -= cost;
+        mafiaPlayerInventory[item] += quantity;
+        addGameMessage(`Acquired ${quantity} ${item} for $${cost.toFixed(2)}.`, 'success');
+        updateMoney(0); // Trigger display update
     } else { // sell
-        if (mafiaPlayerInventory[item] >= quantity) {
-            const revenue = price * quantity;
-            gameMoney += revenue;
-            mafiaPlayerInventory[item] -= quantity;
-            addGameMessage(`Offloaded ${quantity} ${item} for $${revenue.toFixed(2)}.`, 'success');
-            updateMoney(0); // Trigger display update
-        } else {
+        // Check if player has enough contraband to sell
+        if (currentInventory < quantity) {
             addGameMessage(`You don't have ${quantity} units of ${item} to offload!`, 'error');
+            return;
         }
+
+        const revenue = price * quantity;
+        gameMoney += revenue;
+        mafiaPlayerInventory[item] -= quantity;
+        addGameMessage(`Offloaded ${quantity} ${item} for $${revenue.toFixed(2)}.`, 'success');
+        updateMoney(0); // Trigger display update
     }
 }
 
@@ -752,18 +786,17 @@ function drawContrabandTable() {
 
         // Item Data
         fill(240); // White text
-        textSize(height * 0.025); // Increased text size to prevent overlap with slightly tighter spacing
+        textSize(height * 0.022); // Adjusted text size to prevent overlap
         textAlign(CENTER, CENTER);
         text(item, tableX + colWidth * 0.5, yPos + rowHeight / 2);
         text(`$${mafiaContrabandPrices[item].toFixed(2)}`, tableX + colWidth * 1.5, yPos + rowHeight / 2);
-        text(mafiaPlayerInventory[item], tableX + colWidth * 2.5, yPos + rowHeight / 2);
+        text(mafiaPlayerInventory[item], tableX + colWidth * 2.5, yPos + rowHeight / 2); // Display owned quantity
 
         // Buy/Sell buttons for each row (quick buy/sell 1)
         const buyBtnWidth = actionColWidth * 0.45; // Adjusted size
         const buyBtnHeight = rowHeight * 0.4; // Adjusted size
         const btnXOffset = tableX + colWidth * 2.5 + (actionColWidth - (buyBtnWidth * 2 + padding / 2)) / 2; // Center buttons in action column
-        // Buttons are already centered vertically in the row in the previous version, which is good.
-
+        
         // Buy button
         drawButton({
             x: btnXOffset,
@@ -796,21 +829,23 @@ function drawBuySellInput() {
     const inputAreaWidth = width * 0.7; // Wider area for input and buttons
     const inputAreaX = width / 2 - inputAreaWidth / 2; // Centered
     const inputY = height * 0.68; // Adjusted Y, significantly below table and above travel buttons
-    const inputWidth = width * 0.2; // Increased input width
-    const inputHeight = height * 0.07; // Increased input height
-    const buttonWidth = width * 0.1; // Increased button width
-    const padding = 20; // Increased space between elements
+    const inputWidth = width * 0.15; // Adjusted input width
+    const inputHeight = height * 0.06; // Adjusted input height
+    const buttonWidth = width * 0.09; // Adjusted button width
+    const padding = 15; // Adjusted space between elements
 
     // Label for input
     fill(240);
-    textSize(width * 0.02); // Increased label text size
-    textAlign(RIGHT, CENTER); // Align right
-    text(`Quantity for ${selectedContraband || '...'}:`, inputAreaX + (width * 0.15), inputY + inputHeight / 2); // Position label before input
+    textSize(width * 0.018); // Adjusted label text size
+    textAlign(LEFT, CENTER); // Align left
+    // The "x" position for the text has been adjusted to prevent overlap with the input box,
+    // positioning it clearly to the left of the input area.
+    let labelText = `Quantity for ${selectedContraband || '...'}:`;
+    text(labelText, inputAreaX + width * 0.05, inputY + inputHeight / 2); // Adjusted X for label
 
-    // Calculate dynamic X for input field based on label's new width
-    let labelAdjustedX = inputAreaX + (width * 0.15); // End of the label position
-    let labelWidth = textWidth(`Quantity for ${selectedContraband || '...'}:`); // Actual text width
-    const actualInputX = labelAdjustedX + 10; // 10px gap after label
+    // Calculate dynamic X for input field based on label length to ensure no overlap
+    let calculatedLabelWidth = textWidth(labelText);
+    const actualInputX = inputAreaX + width * 0.05 + calculatedLabelWidth + padding;
 
     // Input field background
     fill(30, 40, 50);
@@ -819,7 +854,7 @@ function drawBuySellInput() {
     rect(actualInputX, inputY, inputWidth, inputHeight, 8);
 
     fill(240, 245, 250);
-    textSize(width * 0.025); // Increased input text size
+    textSize(width * 0.022); // Adjusted input text size
     textAlign(CENTER, CENTER);
     text(mafiaBuySellQuantity || 'Enter Qty', actualInputX + inputWidth / 2, inputY + inputHeight / 2);
 
@@ -1294,31 +1329,44 @@ function drawBuySellStockScreen(symbol) {
 }
 
 function buyStock(symbol, quantity) {
+    // Ensure quantity is a valid number
+    quantity = int(quantity);
     if (quantity <= 0 || isNaN(quantity)) {
         addGameMessage("Enter a valid quantity.", 'error');
         return;
     }
+
     const stock = stocksData[symbol];
     const cost = stock.price * quantity;
+    const currentOwned = playerPortfolio[symbol] ? playerPortfolio[symbol].quantity : 0;
 
-    if (gameMoney >= cost) {
-        gameMoney -= cost;
-        if (!playerPortfolio[symbol]) {
-            playerPortfolio[symbol] = { quantity: 0, avgPrice: 0 };
-        }
-        // Calculate new average price
-        const totalOldCost = playerPortfolio[symbol].quantity * playerPortfolio[symbol].avgPrice;
-        playerPortfolio[symbol].quantity += quantity;
-        playerPortfolio[symbol].avgPrice = (totalOldCost + cost) / playerPortfolio[symbol].quantity;
-
-        addGameMessage(`Bought ${quantity} shares of ${symbol} for $${cost.toFixed(2)}.`, 'success');
-        updateMoney(0); // Trigger money display update
-    } else {
+    if (gameMoney < cost) {
         addGameMessage("Not enough money to buy!", 'error');
+        return;
     }
+
+    // Check if buying this quantity exceeds max inventory for this stock
+    if (currentOwned + quantity > STOCK_MAX_INVENTORY) {
+        addGameMessage(`Cannot hold more than ${STOCK_MAX_INVENTORY} shares of ${symbol}.`, 'error');
+        return;
+    }
+
+    gameMoney -= cost;
+    if (!playerPortfolio[symbol]) {
+        playerPortfolio[symbol] = { quantity: 0, avgPrice: 0 };
+    }
+    // Calculate new average price
+    const totalOldCost = playerPortfolio[symbol].quantity * playerPortfolio[symbol].avgPrice;
+    playerPortfolio[symbol].quantity += quantity;
+    playerPortfolio[symbol].avgPrice = (totalOldCost + cost) / playerPortfolio[symbol].quantity;
+
+    addGameMessage(`Bought ${quantity} shares of ${symbol} for $${cost.toFixed(2)}.`, 'success');
+    updateMoney(0); // Trigger money display update
 }
 
 function sellStock(symbol, quantity) {
+    // Ensure quantity is a valid number
+    quantity = int(quantity);
     if (quantity <= 0 || isNaN(quantity)) {
         addGameMessage("Enter a valid quantity.", 'error');
         return;
