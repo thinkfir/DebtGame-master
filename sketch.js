@@ -111,7 +111,15 @@ function setup() {
 
 // p5.js draw function - runs continuously after setup()
 function draw() {
-    background(50, 70, 90); // Dark blue-gray background for the canvas, matching the theme
+    // --- RETRO THEME OVERHAUL ---
+    background(10, 10, 20); // Deep black-blue CRT background
+
+    // Draw scanlines for CRT effect
+    stroke(0, 255, 100, 30);
+    for (let y = 0; y < height; y += 4) {
+        line(0, y, width, y);
+    }
+    noStroke();
 
     // Always draw the game title at the top
     drawCanvasTitle();
@@ -428,15 +436,17 @@ function setupCanvasTitle() {
 }
 
 function drawCanvasTitle() {
-    fill(gameCanvasTitle.color);
-    textSize(gameCanvasTitle.textSize);
+    // Retro neon green glow
+    fill(0, 255, 120);
+    textFont('monospace');
+    textSize(gameCanvasTitle.textSize * 1.1);
     textAlign(CENTER, CENTER);
 
-    // Apply text shadow manually for glow effect (reduced glare)
+    // CRT glow
     drawingContext.shadowOffsetX = 0;
     drawingContext.shadowOffsetY = 0;
-    drawingContext.shadowBlur = gameCanvasTitle.shadowStrength; // Reduced blur for less glare
-    drawingContext.shadowColor = gameCanvasTitle.shadowColor;
+    drawingContext.shadowBlur = 24;
+    drawingContext.shadowColor = 'lime';
 
     text(gameCanvasTitle.text, gameCanvasTitle.x, gameCanvasTitle.y);
 
@@ -494,22 +504,35 @@ function setupMainMenuButtons() {
 }
 
 function drawMainMenu() {
-    // Draw background overlay for menu (no longer covering title)
-    fill(0, 0, 0, 180); // Semi-transparent dark overlay
-    // Only draw overlay from below the title to the bottom
-    rect(0, gameCanvasTitle.y + gameCanvasTitle.textSize / 2, width, height - (gameCanvasTitle.y + gameCanvasTitle.textSize / 2));
+    // Retro grid overlay
+    fill(0, 255, 120, 30);
+    for (let x = 0; x < width; x += 40) {
+        rect(x, 0, 2, height);
+    }
+    for (let y = 0; y < height; y += 40) {
+        rect(0, y, width, 2);
+    }
 
-    // "Choose Your Path" text (always visible, no blinking)
+    // "Choose Your Path" text (retro neon)
+    textFont('monospace');
     textAlign(CENTER, CENTER);
-    textSize(width * 0.04);
-    fill(255, 200, 0); // Yellow
-    text("Choose Your Path", width / 2, height * 0.30); // Adjusted Y position
+    textSize(width * 0.045);
+    fill(255, 20, 200);
+    drawingContext.shadowBlur = 16;
+    drawingContext.shadowColor = '#ff00cc';
+    text("Choose Your Path", width / 2, height * 0.30);
+    drawingContext.shadowBlur = 0;
+    drawingContext.shadowColor = 'rgba(0,0,0,0)';
 
-    // "Make a Million Dollars!" subtitle (non-blinking)
+    // "Make a Million Dollars!" subtitle (retro blue)
     textAlign(CENTER, CENTER);
-    textSize(width * 0.02);
-    fill(200);
-    text("Make a Million Dollars!", width / 2, height * 0.38); // Adjusted Y position
+    textSize(width * 0.022);
+    fill(0, 255, 255);
+    drawingContext.shadowBlur = 10;
+    drawingContext.shadowColor = '#00ffff';
+    text("Make a Million Dollars!", width / 2, height * 0.38);
+    drawingContext.shadowBlur = 0;
+    drawingContext.shadowColor = 'rgba(0,0,0,0)';
 
     // Draw buttons
     drawButton(btnMafiaWars);
@@ -518,37 +541,46 @@ function drawMainMenu() {
 }
     // Generic function to draw a button with enhanced styling
 function drawButton(button) {
-    // Standardize pill size: use a fixed ratio for width/height if needed
-    let btnColor = button.color;
-    let textColor = color(255); // White text
+    // --- RETRO BUTTON STYLE (BRIGHT BUTTON, SOFT TEXT) ---
+    let btnColor = color(0, 255, 120); // Neon green default
+    if (button.color) btnColor = button.color;
+    let textColor = color(220, 255, 220); // Soft, less-bright text
 
-    // Darken on hover
+    // Retro darken on hover
     if (isMouseOver(button)) {
         btnColor = color(
-            red(btnColor) * 0.7,
-            green(btnColor) * 0.7,
-            blue(btnColor) * 0.7
+            red(btnColor) * 0.5,
+            green(btnColor) * 0.8,
+            blue(btnColor) * 0.5
         );
         cursor(HAND);
     } else {
         cursor(ARROW);
     }
 
-    // Remove all shadows, gradients, and inner rectangles
-    noStroke();
-
-    // Perfectly smooth pill shape: single rounded rect, radius = half height
-    const buttonRadius = button.height / 2;
+    // Retro border
+    stroke(0, 255, 120);
+    strokeWeight(3);
     fill(btnColor);
+
+    // Pill shape
+    const buttonRadius = button.height / 2;
     rect(button.x, button.y, button.width, button.height, buttonRadius);
 
-    // Draw button text centered
+    // Retro pixel font
+    textFont('monospace');
     fill(textColor);
-    textSize(button.height * 0.4);
+    textSize(button.height * 0.45);
     textAlign(CENTER, CENTER);
     if (button.text !== null) {
+        // Softer glow for text
+        drawingContext.shadowBlur = 4;
+        drawingContext.shadowColor = 'rgba(200,255,200,0.5)';
         text(button.text, button.x + button.width / 2, button.y + button.height / 2);
+        drawingContext.shadowBlur = 0;
+        drawingContext.shadowColor = 'rgba(0,0,0,0)';
     }
+    noStroke();
 }
 
 // --- Global UI Buttons ---
