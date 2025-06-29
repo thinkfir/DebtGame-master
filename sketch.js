@@ -541,11 +541,11 @@ function drawMainMenu() {
 }
     // Generic function to draw a button with enhanced styling
 function drawButton(button) {
-    // --- RETRO BUTTON STYLE (BRIGHT BUTTON, MUTED TEXT IF .mutedText) ---
+    // --- RETRO BUTTON STYLE (BRIGHT BUTTON, ALWAYS NEON TEXT) ---
     let btnColor = color(0, 255, 120); // Neon green default
     if (button.color) btnColor = button.color;
 
-    let textColor = button.mutedText ? color(180, 200, 180) : color(220, 255, 220);
+    let textColor = color(220, 255, 220);
 
     // Retro darken on hover
     if (isMouseOver(button)) {
@@ -574,11 +574,8 @@ function drawButton(button) {
     textSize(button.height * 0.45);
     textAlign(CENTER, CENTER);
     if (button.text !== null) {
-        // Only glow if not muted
-        if (!button.mutedText) {
-            drawingContext.shadowBlur = 4;
-            drawingContext.shadowColor = 'rgba(200,255,200,0.5)';
-        }
+        drawingContext.shadowBlur = 4;
+        drawingContext.shadowColor = 'rgba(200,255,200,0.5)';
         text(button.text, button.x + button.width / 2, button.y + button.height / 2);
         drawingContext.shadowBlur = 0;
         drawingContext.shadowColor = 'rgba(0,0,0,0)';
@@ -770,7 +767,7 @@ function drawMafiaWarsScreen() {
 
     // Illegal Wallet button (retro button style)
     const btnIllegalWallet = { x: width * 0.02, y: height * 0.18, width: width * 0.18, height: height * 0.06, text: 'Illegal Wallet', color: color(80, 80, 80) };
-    drawButton({ ...btnIllegalWallet, mutedText: currentGameState === 'mafiaWars' });
+    drawButton(btnIllegalWallet);
 
     // Current Location Display (muted)
     fill(180, 200, 210);
@@ -788,7 +785,7 @@ function drawMafiaWarsScreen() {
     drawLocationButtons();
 
     // Draw the global "Next Day" button
-    drawButton({ ...btnAdvanceDayGlobal, mutedText: currentGameState === 'mafiaWars' });
+    drawButton(btnAdvanceDayGlobal);
 
     // Back button to main menu (lower position to not overlap global Next Day)
     const btnBackToMainMafia = {
@@ -799,7 +796,7 @@ function drawMafiaWarsScreen() {
         text: 'Main Menu',
         color: color(100, 100, 100)
     };
-    drawButton({ ...btnBackToMainMafia, mutedText: currentGameState === 'mafiaWars' });
+    drawButton(btnBackToMainMafia);
 
     // Mafia Prices update by minute (every MAFIA_PRICE_UPDATE_INTERVAL milliseconds)
     if (millis() - lastMafiaPriceUpdateTime > MAFIA_PRICE_UPDATE_INTERVAL) {
@@ -864,7 +861,7 @@ function drawContrabandTable() {
             width: buyBtnWidth,
             height: buyBtnHeight,
             text: 'Buy',
-            color: color(50, 150, 50),
+            color: color(0),
             mutedText: currentGameState === 'mafiaWars'
         });
         // Sell button
@@ -874,7 +871,7 @@ function drawContrabandTable() {
             width: buyBtnWidth,
             height: buyBtnHeight,
             text: 'Sell',
-            color: color(150, 50, 50),
+            color: color(0),
             mutedText: currentGameState === 'mafiaWars'
         });
     }
@@ -925,8 +922,8 @@ function drawBuySellInput() {
     const sellWithQtyBtnX = buyWithQtyBtnX + buttonWidth + padding / 2; // Small gap between buy and sell
     const btnY = inputY;
 
-    drawButton({ x: buyWithQtyBtnX, y: btnY, width: buttonWidth, height: inputHeight, text: 'Buy Qty', color: color(50, 180, 50), mutedText: currentGameState === 'mafiaWars' });
-    drawButton({ x: sellWithQtyBtnX, y: btnY, width: buttonWidth, height: inputHeight, text: 'Sell Qty', color: color(220, 50, 50), mutedText: currentGameState === 'mafiaWars' });
+    drawButton({ x: buyWithQtyBtnX, y: btnY, width: buttonWidth, height: inputHeight, text: 'Buy Qty', color: color(50, 180, 50) });
+    drawButton({ x: sellWithQtyBtnX, y: btnY, width: buttonWidth, height: inputHeight, text: 'Sell Qty', color: color(220, 50, 50) });
 }
 
 
