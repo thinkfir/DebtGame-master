@@ -1,0 +1,43 @@
+/* Import Google Font - Inter for a clean look */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+
+html, body {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Ensures padding/border are included in element's total width/height */
+    height: 100vh; /* Make html and body take full viewport height */
+    width: 100vw; /* Make html and body take full viewport width */
+    overflow: hidden; /* Prevent scrollbars from appearing */
+    font-family: 'Inter', sans-serif; /* Apply font globally */
+    background-color: #1a202c; /* Dark background */
+    color: #edf2f7; /* Light text */
+}
+
+body {
+    display: flex;
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+}
+
+/* Game container where the p5.js canvas will be injected - takes up the entire space */
+#game-container {
+    position: relative;
+    width: 100%; /* Take full available width */
+    height: 100%; /* Take full available height */
+    background-color: #2d3748; /* Background for the canvas area */
+    display: flex; /* Ensures canvas fills it */
+    justify-content: center;
+    align-items: center;
+    /* Removed border-radius, box-shadow, border, overflow, max-width, aspect-ratio
+       as the canvas will now be truly fullscreen and these are not needed for the container */
+}
+
+canvas {
+    display: block;
+    width: 100%; /* Canvas fills the game-container */
+    height: 100%; /* Canvas fills the game-container */
+    /* Removed border-radius as canvas is now fullscreen */
+}
+
+/* Removed all styles related to .game-title, #game-info, #game-messages,
+   and all log-message related classes as these are now drawn by p5.js. */
