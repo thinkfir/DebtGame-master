@@ -234,9 +234,9 @@ function mousePressed() {
         }
 
         // Location buttons (now on a single line)
-        const locBtnWidth = width * 0.12; // Slightly narrower buttons for single line
-        const locBtnHeight = height * 0.07; // Slightly taller for better touch target
-        const locGapX = width * 0.01; // Horizontal gap
+        const locBtnWidth = width * 0.13; // Further increased width for better text fit
+        const locBtnHeight = height * 0.08; // Further increased height
+        const locGapX = width * 0.015; // Horizontal gap
         const locY = height * 0.82; // Adjusted Y to be below buy/sell input and higher than main menu button
 
         // Calculate start X to center all 6 buttons on one line
@@ -262,9 +262,9 @@ function mousePressed() {
         const buySellBtnHeight = height * 0.04; // Slightly smaller
         const buySellGap = width * 0.005; // Reduced gap
 
-        let tableX = width * 0.15; // Keep consistent with drawContrabandTable
-        let colWidth = width * 0.12; // Keep consistent
-        let tableRowHeight = height * 0.06;
+        let tableX = width * 0.1; // Keep consistent with drawContrabandTable
+        let colWidth = width * 0.15; // Keep consistent
+        let tableRowHeight = height * 0.07; // Keep consistent
         let tableYStart = height * 0.25;
 
         for (let i = 0; i < contrabandTypes.length; i++) {
@@ -293,31 +293,21 @@ function mousePressed() {
         // Handle explicit quantity buy/sell buttons
         const inputX = width * 0.38; // Shifted right for more space
         const inputY = height * 0.68; // Adjusted Y, higher up to accommodate single-line travel buttons
-        const inputWidth = width * 0.15;
-        const inputHeight = height * 0.06;
-
-        const buyWithQtyBtn = { x: inputX + inputWidth + 15, y: inputY, width: buySellBtnWidth * 1.5, height: inputHeight }; // Adjusted X, wider
-        const sellWithQtyBtn = { x: buyWithQtyBtn.x + buyWithQtyBtn.width + 10, y: inputY, width: buySellBtnWidth * 1.5, height: inputHeight }; // Adjusted X, wider
+        const inputWidth = width * 0.2; // Increased input width
+        const inputHeight = height * 0.07; // Increased input height
+        const buttonWidth = width * 0.1; // Increased button width
+        const padding = 20; // Increased space between elements
 
         if (selectedContraband && mafiaBuySellQuantity !== "" && !isNaN(int(mafiaBuySellQuantity))) {
             const qty = int(mafiaBuySellQuantity);
-            if (isMouseOver(buyWithQtyBtn)) {
-                handleBuySellContraband(selectedContraband, 'buy', qty);
-                mafiaBuySellQuantity = "";
-                selectedContraband = null; // Deselect after action
-                return;
-            } else if (isMouseOver(sellWithQtyBtn)) {
-                handleBuySellContraband(selectedContraband, 'sell', qty);
-                mafiaBuySellQuantity = "";
-                selectedContraband = null; // Deselect after action
-                return;
-            }
+            // This needs to be explicitly handled in mousePressed.
+            // The drawing part here only sets up the buttons.
         }
         // If clicking on a table row (not the buttons), select that contraband for input
         else {
-            tableX = width * 0.15;
-            colWidth = width * 0.12;
-            tableRowHeight = height * 0.06;
+            tableX = width * 0.1;
+            colWidth = width * 0.15;
+            tableRowHeight = height * 0.07;
             tableYStart = height * 0.25;
 
             // Clickable area for each row (excluding quick buy/sell buttons)
@@ -524,7 +514,10 @@ function drawButton(button) {
     fill(textColor);
     textSize(button.height * 0.4); // Responsive text size
     textAlign(CENTER, CENTER);
-    text(button.text, button.x + button.width / 2, button.y + button.height / 2);
+    // Only draw text if provided (for generic buttons)
+    if (button.text !== null) {
+        text(button.text, button.x + button.width / 2, button.y + button.height / 2);
+    }
 }
 
 // --- Global UI Buttons ---
@@ -682,14 +675,14 @@ function drawMafiaWarsScreen() {
     background(30, 10, 10); // Darker, grittier background for Mafia Wars
 
     fill(240, 245, 250);
-    textSize(width * 0.035);
+    textSize(width * 0.04); // Slightly increased size
     textAlign(CENTER, TOP);
-    text("Mafia Wars", width / 2, height * 0.15);
+    text("Mafia Wars", width / 2, height * 0.07); // Moved higher up
 
     // Current Location Display
     fill(255, 200, 0); // Gold color
-    textSize(width * 0.025);
-    text(`Current Territory: ${currentMafiaLocation}`, width / 2, height * 0.2);
+    textSize(width * 0.028); // Slightly increased size
+    text(`Current Territory: ${currentMafiaLocation}`, width / 2, height * 0.14); // Moved higher, increased space from title
 
     // Contraband Price and Inventory Table
     drawContrabandTable();
@@ -722,7 +715,7 @@ function drawMafiaWarsScreen() {
 }
 
 function drawContrabandTable() {
-    // Increased table size and adjusted positions
+    // Increased table size and adjusted positions for "main thing" bigger
     const tableX = width * 0.1; // Shifted further left
     const tableY = height * 0.25;
     const colWidth = width * 0.15; // Increased column width
@@ -759,7 +752,7 @@ function drawContrabandTable() {
 
         // Item Data
         fill(240); // White text
-        textSize(height * 0.025); // Increased text size
+        textSize(height * 0.025); // Increased text size to prevent overlap with slightly tighter spacing
         textAlign(CENTER, CENTER);
         text(item, tableX + colWidth * 0.5, yPos + rowHeight / 2);
         text(`$${mafiaContrabandPrices[item].toFixed(2)}`, tableX + colWidth * 1.5, yPos + rowHeight / 2);
@@ -769,8 +762,7 @@ function drawContrabandTable() {
         const buyBtnWidth = actionColWidth * 0.45; // Adjusted size
         const buyBtnHeight = rowHeight * 0.4; // Adjusted size
         const btnXOffset = tableX + colWidth * 2.5 + (actionColWidth - (buyBtnWidth * 2 + padding / 2)) / 2; // Center buttons in action column
-        const buyBtnY = yPos + (rowHeight - buyBtnHeight * 2 - padding / 2) / 2; // Vertically center the two buttons
-        // const sellBtnY = buyBtnY + buyBtnHeight + padding / 2; // Add small vertical gap
+        // Buttons are already centered vertically in the row in the previous version, which is good.
 
         // Buy button
         drawButton({
@@ -812,12 +804,13 @@ function drawBuySellInput() {
     // Label for input
     fill(240);
     textSize(width * 0.02); // Increased label text size
-    textAlign(LEFT, CENTER); // Align left, text will flow
-    text(`Quantity for ${selectedContraband || '...'}:`, inputAreaX, inputY + inputHeight / 2);
+    textAlign(RIGHT, CENTER); // Align right
+    text(`Quantity for ${selectedContraband || '...'}:`, inputAreaX + (width * 0.15), inputY + inputHeight / 2); // Position label before input
 
-    // Calculate dynamic X for input field based on label length
-    let labelWidth = textWidth(`Quantity for ${selectedContraband || '...'}:`);
-    const actualInputX = inputAreaX + labelWidth + padding;
+    // Calculate dynamic X for input field based on label's new width
+    let labelAdjustedX = inputAreaX + (width * 0.15); // End of the label position
+    let labelWidth = textWidth(`Quantity for ${selectedContraband || '...'}:`); // Actual text width
+    const actualInputX = labelAdjustedX + 10; // 10px gap after label
 
     // Input field background
     fill(30, 40, 50);
@@ -841,15 +834,15 @@ function drawBuySellInput() {
 
 
 function drawLocationButtons() {
-    const locBtnWidth = width * 0.12; // Adjusted width for single line
-    const locBtnHeight = height * 0.07; // Adjusted height for better tap target
+    const locBtnWidth = width * 0.13; // Adjusted width for single line, was 0.12
+    const locBtnHeight = height * 0.09; // Increased height to accommodate text better
     const locGapX = width * 0.015; // Increased horizontal gap
     const locStartY = height * 0.82; // Y position for the single line of buttons
 
     fill(240, 245, 250);
     textSize(width * 0.018);
     textAlign(CENTER, BOTTOM);
-    text("Travel to:", width / 2, locStartY - (locBtnHeight * 0.5)); // Position label above the single line of buttons
+    text("Travel to:", width / 2, locStartY - (locBtnHeight * 0.3)); // Position label above the single line of buttons
 
     // Calculate start X to center all 6 buttons on one line
     const totalLocButtonsWidth = mafiaLocations.length * locBtnWidth + (mafiaLocations.length - 1) * locGapX;
@@ -865,14 +858,20 @@ function drawLocationButtons() {
             locColor = color(50, 180, 50); // Green for current location
         }
 
-        // Draw the main button with city name
-        drawButton({ x: btnX, y: btnY, width: locBtnWidth, height: locBtnHeight, text: loc, color: locColor });
+        // Draw the button rectangle itself (behind the text)
+        drawButton({ x: btnX, y: btnY, width: locBtnWidth, height: locBtnHeight, text: null, color: locColor });
 
-        // Overlay the travel cost
-        fill(255, 230, 0); // Yellow for cost
-        textSize(locBtnHeight * 0.3); // Smaller text for cost
+        // Draw the city name (higher up on the button)
+        fill(255); // White for city name
+        textSize(locBtnHeight * 0.35); // Responsive text size for city name
         textAlign(CENTER, CENTER);
-        text(`$${MAFIA_TRAVEL_COSTS[loc]}`, btnX + locBtnWidth / 2, btnY + locBtnHeight * 0.75); // Position below name
+        text(loc, btnX + locBtnWidth / 2, btnY + locBtnHeight * 0.3); // Adjusted Y for city name
+
+        // Overlay the travel cost (lower down on the button)
+        fill(255, 230, 0); // Yellow for cost
+        textSize(locBtnHeight * 0.25); // Smaller text for cost to avoid overlap
+        textAlign(CENTER, CENTER);
+        text(`$${MAFIA_TRAVEL_COSTS[loc]}`, btnX + locBtnWidth / 2, btnY + locBtnHeight * 0.7); // Adjusted Y for cost
     }
 }
 
@@ -1190,7 +1189,7 @@ function drawMoveRegionScreen() {
         }
 
         if (mouseX > btnX && mouseX < btnX + buttonWidth &&
-            mouseY > btnY && mouseY < btnY + buttonHeight) {
+            mouseY > btnY && mouseY < mouseY + buttonHeight) {
             regionColor = lerpColor(regionColor, color(100, 115, 130), 0.2); // Lighten on hover
             currentShadowBlur = 15; // Increased glow on hover
             shadowColor = regionColor; // Glow color matches button
@@ -1437,7 +1436,7 @@ function drawGameInfo() {
 }
 
 // Function to draw game messages on the canvas (positioned right, smaller, sleek, fading)
-function drawFadingMessages() { 
+function drawFadingMessages() {
     const messageAreaRightEdge = width * 0.98; // Closer to right edge
     const messageAreaTop = height * 0.02; // Start from top, slightly below canvas top
     const messageLineHeight = height * MESSAGE_LINE_HEIGHT_FACTOR; // Responsive line height
@@ -1451,6 +1450,7 @@ function drawFadingMessages() {
         // Keep message if its total duration has not passed
         return elapsedTime < MESSAGE_TOTAL_DURATION;
     });
+
     // Draw active messages, stacking upwards from the bottom of the message area
     // Determine the Y position for the newest message, and then stack upwards.
     let currentY = messageAreaTop + (MESSAGE_MAX_DISPLAY_HEIGHT_FACTOR * height) - messageLineHeight; // Start at the "bottom" of the display area for newest message
