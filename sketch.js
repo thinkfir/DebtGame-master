@@ -62,6 +62,7 @@ let currentMafiaLocation = 'New York';
 let mafiaContrabandPrices = {}; // { 'Bliss Dust': 20, 'Shadow Bloom': 2000, ... }
 let mafiaPlayerInventory = {}; // { 'Bliss Dust': 0, 'Shadow Bloom': 5, ... }
 let mafiaBuySellQuantity = ""; // Input for buy/sell in Mafia Wars
+let mafiaInputFocused = false; // Track focus for Mafia Wars quantity input
 let selectedContraband = null; // Currently selected contraband for buy/sell operations
 let lastMafiaPriceUpdateTime = 0; // Timestamp for last Mafia price update
 const MAFIA_PRICE_UPDATE_INTERVAL = 15000; // Update prices every 15 seconds (simulating "by minute")
@@ -134,6 +135,11 @@ function draw() {
     // Always draw game info (left) and messages (right) on top of any game screen
     drawGameInfo();
     drawFadingMessages(); // Call the new fading messages function
+
+    // If illegal wallet screen
+    if (currentGameState === 'illegalWallet') {
+        drawIllegalWalletScreen();
+    }
 }
 
 function windowResized() {
@@ -175,6 +181,11 @@ function mousePressed() {
                     break;
                 }
             }
+        }
+    } else if (currentGameState === 'illegalWallet') {
+        const btnBack = { x: width * 0.02, y: height * 0.92, width: width * 0.18, height: height * 0.06 };
+        if (isMouseOver(btnBack)) {
+            setGameState('mafiaWars');
         }
     } else if (currentGameState === 'wallet') {
         if (isMouseOver(btnBackToStockMarket)) {
@@ -305,6 +316,25 @@ function mousePressed() {
         const buttonWidth = width * 0.1; // Increased button width
         const padding = 20; // Increased space between elements
 
+        // Smooth pill-shaped input box
+        const inputRadius = inputHeight / 2;
+        fill(30, 40, 50);
+        stroke(100, 115, 130);
+        strokeWeight(1);
+        rect(inputX, inputY, inputWidth, inputHeight, inputRadius);
+
+        // Show "type..." when focused and empty
+        noStroke();
+        fill(240, 245, 250);
+        textSize(width * 0.022);
+        textAlign(CENTER, CENTER);
+        let mafiaInputDisplay = mafiaBuySellQuantity;
+        if (mafiaInputFocused && mafiaBuySellQuantity === "") {
+            fill(180, 180, 180);
+            mafiaInputDisplay = "type...";
+        }
+        text(mafiaInputDisplay || 'Enter Qty', inputX + inputWidth / 2, inputY + inputHeight / 2);
+
         if (selectedContraband && mafiaBuySellQuantity !== "" && !isNaN(int(mafiaBuySellQuantity))) {
             const qty = int(mafiaBuySellQuantity);
             // Check if the buy with quantity button was pressed
@@ -363,7 +393,7 @@ function keyPressed() {
         }
     }
     // Mafia Wars buy/sell quantity input
-    else if (currentGameState === 'mafiaWars' && selectedContraband !== null) {
+    else if (currentGameState === 'mafiaWars' && selectedContraband !== null && mafiaInputFocused) {
         if (keyCode === BACKSPACE) {
             mafiaBuySellQuantity = mafiaBuySellQuantity.substring(0, mafiaBuySellQuantity.length - 1);
         } else if (key >= '0' && key <= '9') {
@@ -376,6 +406,12 @@ function keyPressed() {
 function isMouseOver(button) {
     return mouseX > button.x && mouseX < button.x + button.width &&
            mouseY > button.y && mouseY < button.y + button.height;
+}
+
+// Helper for Mafia input focus
+function isMouseOverMafiaInput(inputX, inputY, inputWidth, inputHeight) {
+    return mouseX > inputX && mouseX < inputX + inputWidth &&
+           mouseY > inputY && mouseY < inputY + inputHeight;
 }
 
 // --- Canvas Title Drawing ---
@@ -463,13 +499,11 @@ function drawMainMenu() {
     // Only draw overlay from below the title to the bottom
     rect(0, gameCanvasTitle.y + gameCanvasTitle.textSize / 2, width, height - (gameCanvasTitle.y + gameCanvasTitle.textSize / 2));
 
-    // Blinking "Choose Your Path" text
-    if (floor(millis() / BLINK_INTERVAL) % 2 === 0) { // Toggle visibility based on time
-        textAlign(CENTER, CENTER);
-        textSize(width * 0.04);
-        fill(255, 200, 0); // Yellow
-        text("Choose Your Path", width / 2, height * 0.30); // Adjusted Y position
-    }
+    // "Choose Your Path" text (always visible, no blinking)
+    textAlign(CENTER, CENTER);
+    textSize(width * 0.04);
+    fill(255, 200, 0); // Yellow
+    text("Choose Your Path", width / 2, height * 0.30); // Adjusted Y position
 
     // "Make a Million Dollars!" subtitle (non-blinking)
     textAlign(CENTER, CENTER);
@@ -484,58 +518,34 @@ function drawMainMenu() {
 }
     // Generic function to draw a button with enhanced styling
 function drawButton(button) {
+    // Standardize pill size: use a fixed ratio for width/height if needed
     let btnColor = button.color;
     let textColor = color(255); // White text
-    let currentStrokeWeight = 2;
-    let currentShadowBlur = 0;
-    let shadowColor = 'rgba(0,0,0,0)';
 
-    // Hover effect
+    // Darken on hover
     if (isMouseOver(button)) {
-        btnColor = lerpColor(btnColor, color(255), 0.2); // Lighten on hover
-        currentShadowBlur = 15; // Increased glow on hover
-        shadowColor = btnColor; // Glow color matches button
-        cursor(HAND); // Change cursor to hand
+        btnColor = color(
+            red(btnColor) * 0.7,
+            green(btnColor) * 0.7,
+            blue(btnColor) * 0.7
+        );
+        cursor(HAND);
     } else {
-        cursor(ARROW); // Default cursor
+        cursor(ARROW);
     }
 
-    // Apply shadow before drawing the button
-    drawingContext.shadowOffsetX = 0;
-    drawingContext.shadowOffsetY = 0;
-    drawingContext.shadowBlur = currentShadowBlur;
-    drawingContext.shadowColor = shadowColor;
-
-    // Draw button background (gradient-like effect)
-    for (let i = 0; i < button.height / 2; i++) {
-        let inter = map(i, 0, button.height / 2, 0, 1);
-        let c = lerpColor(btnColor, color(btnColor.levels[0] * 0.6, btnColor.levels[1] * 0.6, btnColor.levels[2] * 0.6), inter);
-        fill(c);
-        rect(button.x, button.y + i, button.width, 2, 15); // Top half
-        rect(button.x, button.y + button.height - i - 2, button.width, 2, 15); // Bottom half
-    }
-    fill(btnColor); // Fill the middle part
-    rect(button.x, button.y + button.height / 2, button.width, 0, 15);
-
-
+    // Remove all shadows, gradients, and inner rectangles
     noStroke();
-    rect(button.x, button.y, button.width, button.height, 15); // Main button shape for click detection and final fill
 
-    // Reset shadow properties after drawing button
-    drawingContext.shadowBlur = 0;
-    drawingContext.shadowColor = 'rgba(0,0,0,0)';
+    // Perfectly smooth pill shape: single rounded rect, radius = half height
+    const buttonRadius = button.height / 2;
+    fill(btnColor);
+    rect(button.x, button.y, button.width, button.height, buttonRadius);
 
-    // Add a subtle border
-    stroke(btnColor.levels[0] * 0.8, btnColor.levels[1] * 0.8, btnColor.levels[2] * 0.8);
-    strokeWeight(currentStrokeWeight);
-    noFill(); // Draw only border
-    rect(button.x, button.y, button.width, button.height, 15);
-
-
+    // Draw button text centered
     fill(textColor);
-    textSize(button.height * 0.4); // Responsive text size
+    textSize(button.height * 0.4);
     textAlign(CENTER, CENTER);
-    // Only draw text if provided (for generic buttons)
     if (button.text !== null) {
         text(button.text, button.x + button.width / 2, button.y + button.height / 2);
     }
@@ -712,6 +722,10 @@ function drawMafiaWarsScreen() {
     textSize(width * 0.04); // Slightly increased size
     textAlign(CENTER, TOP);
     text("Mafia Wars", width / 2, height * 0.07); // Moved higher up
+
+    // Illegal Wallet button
+    const btnIllegalWallet = { x: width * 0.02, y: height * 0.18, width: width * 0.18, height: height * 0.06, text: 'Illegal Wallet', color: color(80, 80, 80) };
+    drawButton(btnIllegalWallet);
 
     // Current Location Display
     fill(255, 200, 0); // Gold color
@@ -954,7 +968,7 @@ function setupStockMarketButtons() {
         width: buttonWidth,
         height: buttonHeight,
         text: 'Next Day',
-        color: color(60, 90, 150) // Blueish-gray
+        color: color(80, 100, 150) // Blueish-gray
     };
     btnMoveRegion = {
         x: startX + buttonWidth + gap,
@@ -1189,6 +1203,58 @@ function drawWalletScreen() {
     drawButton(btnBackToStockMarket); // Reusing the back button style
 }
 
+function drawIllegalWalletScreen() {
+    background(30, 10, 10);
+    fill(255, 230, 0);
+    textSize(width * 0.035);
+    textAlign(CENTER, TOP);
+    text("Illegal Wallet", width / 2, height * 0.12);
+
+    // Calculate total contraband
+    let totalContraband = 0;
+    for (let i = 0; i < contrabandTypes.length; i++) {
+        totalContraband += mafiaPlayerInventory[contrabandTypes[i]];
+    }
+
+    // Draw capacity bar
+    const barX = width * 0.2;
+    const barY = height * 0.2;
+    const barW = width * 0.6;
+    const barH = height * 0.04;
+    fill(40, 40, 40);
+    rect(barX, barY, barW, barH, barH / 2);
+    fill(totalContraband > 30 ? color(220, 50, 50) : color(50, 180, 50));
+    const fillW = map(totalContraband, 0, 30, 0, barW, true);
+    rect(barX, barY, fillW, barH, barH / 2);
+
+    fill(255);
+    textSize(width * 0.018);
+    textAlign(CENTER, CENTER);
+    text(`${totalContraband} / 30 contraband`, width / 2, barY + barH / 2);
+
+    // Draw inventory table
+    const tableX = width * 0.25;
+    const tableY = barY + barH + height * 0.04;
+    const rowH = height * 0.05;
+    fill(240, 245, 250);
+    textSize(width * 0.018);
+    textAlign(LEFT, CENTER);
+    for (let i = 0; i < contrabandTypes.length; i++) {
+        const y = tableY + i * rowH;
+        fill(200, 200, 200);
+        rect(tableX, y, width * 0.5, rowH, rowH / 2);
+        fill(40, 40, 40);
+        text(contrabandTypes[i], tableX + 20, y + rowH / 2);
+        textAlign(RIGHT, CENTER);
+        text(mafiaPlayerInventory[contrabandTypes[i]], tableX + width * 0.5 - 20, y + rowH / 2);
+        textAlign(LEFT, CENTER);
+    }
+
+    // Back button
+    const btnBack = { x: width * 0.02, y: height * 0.92, width: width * 0.18, height: height * 0.06, text: 'Back', color: color(100, 100, 100) };
+    drawButton(btnBack);
+}
+
 function drawMoveRegionScreen() {
     background(45, 55, 70); // Dark blue-gray background for Move screen
     fill(240, 245, 250);
@@ -1223,8 +1289,7 @@ function drawMoveRegionScreen() {
             shadowColor = color(80, 130, 100, 150); // Greenish glow for selected
         }
 
-        if (mouseX > btnX && mouseX < btnX + buttonWidth &&
-            mouseY > btnY && mouseY < mouseY + buttonHeight) {
+        if (mouseX > btnX && mouseY > btnY && mouseX < btnX + buttonWidth && mouseY < btnY + buttonHeight) {
             regionColor = lerpColor(regionColor, color(100, 115, 130), 0.2); // Lighten on hover
             currentShadowBlur = 15; // Increased glow on hover
             shadowColor = regionColor; // Glow color matches button
@@ -1240,9 +1305,8 @@ function drawMoveRegionScreen() {
         drawingContext.shadowColor = shadowColor;
 
         fill(regionColor);
-        stroke(borderColor);
-        strokeWeight(currentStrokeWeight);
-        rect(btnX, btnY, buttonWidth, buttonHeight, 15); // Rounded corners
+        noStroke(); // Ensure no stroke for these buttons
+        rect(btnX, btnY, buttonWidth, buttonHeight, buttonHeight / 2); // Rounded corners
 
         drawingContext.shadowBlur = 0;
         drawingContext.shadowColor = 'rgba(0,0,0,0)'; // Reset shadow
@@ -1385,7 +1449,7 @@ function sellStock(symbol, quantity) {
         delete playerPortfolio[symbol]; // Remove from portfolio if quantity is zero
     }
     addGameMessage(`Sold ${quantity} shares of ${symbol} for $${revenue.toFixed(2)}.`, 'success');
-    updateMoney(0); // Trigger money display update
+    updateMoney(0); // Trigger display update
 }
 
 function changeRegion(newIndex) {
