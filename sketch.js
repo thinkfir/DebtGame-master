@@ -67,9 +67,6 @@ let selectedContraband = null; // Currently selected contraband for buy/sell ope
 let lastMafiaPriceUpdateTime = 0; // Timestamp for last Mafia price update
 const MAFIA_PRICE_UPDATE_INTERVAL = 15000; // Update prices every 15 seconds (simulating "by minute")
 
-// --- Mafia Wars Action Buttons (global for sync between draw and mousePressed) ---
-let btnSteal = {}, btnGamble = {}, btnBribe = {};
-
 // Max inventory for contraband
 const MAFIA_MAX_INVENTORY_PER_ITEM = 30; // Max 30 units per contraband type
 
@@ -249,33 +246,9 @@ function mousePressed() {
             }
         }
     } else if (currentGameState === 'mafiaWars') {
-        // Ensure action buttons are up-to-date for hit detection
-        updateMafiaActionButtons();
-
-        // DEBUG: Log mouse and button positions
-        console.log(
-            "Mouse:", mouseX, mouseY,
-            "StealBtn:", btnSteal.x, btnSteal.y, btnSteal.width, btnSteal.height,
-            "isOverSteal:", isMouseOver(btnSteal)
-        );
-
         // GLOBAL NEXT DAY BUTTON CHECK (now located consistently on the right side below messages)
         if (isMouseOver(btnAdvanceDayGlobal)) {
             advanceDay();
-            return;
-        }
-
-        // --- NEW MECHANICS BUTTONS HANDLING ---
-        if (isMouseOver(btnSteal)) {
-            handleSteal();
-            return;
-        }
-        if (isMouseOver(btnGamble)) {
-            handleGamble();
-            return;
-        }
-        if (isMouseOver(btnBribe)) {
-            handleBribe();
             return;
         }
 
@@ -586,7 +559,7 @@ function drawButton(button) {
         cursor(ARROW);
     }
 
-    // Retro border
+    // No border/stroke for button background
     noStroke();
     fill(btnColor);
 
@@ -596,8 +569,8 @@ function drawButton(button) {
 
     // Retro pixel font, no glow
     textFont('monospace');
-    noStroke();
-    fill(255); // Pure white text
+    fill(textColor);
+    noStroke(); // Ensure no stroke on text
     textSize(button.height * 0.45);
     textAlign(CENTER, CENTER);
     if (button.text !== null) {
@@ -605,6 +578,7 @@ function drawButton(button) {
         drawingContext.shadowColor = 'rgba(0,0,0,0)';
         text(button.text, button.x + button.width / 2, button.y + button.height / 2);
     }
+    noStroke();
 }
 
 // --- Global UI Buttons ---
@@ -793,42 +767,6 @@ function drawMafiaWarsScreen() {
     const btnIllegalWallet = { x: width * 0.02, y: height * 0.18, width: width * 0.18, height: height * 0.06, text: 'Illegal Wallet', color: color(80, 80, 80) };
     drawButton(btnIllegalWallet);
 
-    // --- ORGANIZED ACTION BUTTONS ON THE RIGHT ---
-    updateMafiaActionButtons();
-    drawButton(btnSteal);
-    drawButton(btnGamble);
-    drawButton(btnBribe);
-
-function updateMafiaActionButtons() {
-    // Place all action buttons in a vertical stack below Next Day
-    const actionBtnWidth = btnAdvanceDayGlobal.width;
-    const actionBtnHeight = height * 0.06;
-    const actionBtnX = btnAdvanceDayGlobal.x;
-    const actionBtnYStart = btnAdvanceDayGlobal.y + btnAdvanceDayGlobal.height + height * 0.025;
-    const actionBtnGap = height * 0.015;
-
-    btnSteal.x = actionBtnX;
-    btnSteal.y = actionBtnYStart;
-    btnSteal.width = actionBtnWidth;
-    btnSteal.height = actionBtnHeight;
-    btnSteal.text = 'Steal (Risky)';
-    btnSteal.color = color(120, 60, 180);
-
-    btnGamble.x = actionBtnX;
-    btnGamble.y = actionBtnYStart + actionBtnHeight + actionBtnGap;
-    btnGamble.width = actionBtnWidth;
-    btnGamble.height = actionBtnHeight;
-    btnGamble.text = 'Gamble';
-    btnGamble.color = color(180, 120, 60);
-
-    btnBribe.x = actionBtnX;
-    btnBribe.y = actionBtnYStart + 2 * (actionBtnHeight + actionBtnGap);
-    btnBribe.width = actionBtnWidth;
-    btnBribe.height = actionBtnHeight;
-    btnBribe.text = 'Bribe Boss';
-    btnBribe.color = color(200, 180, 60);
-}
-
     // Current Location Display (muted)
     fill(180, 200, 210);
     textFont('Courier New');
@@ -863,60 +801,6 @@ function updateMafiaActionButtons() {
         mafiaContrabandPrices = generateMafiaPrices(currentMafiaLocation);
         lastMafiaPriceUpdateTime = millis();
     }
-    
-    // --- Mafia Wars Action Logic ---
-    
-    function handleSteal() {
-        // 40% chance to succeed, 60% chance to lose big
-        let risk = random();
-        if (risk < 0.4) {
-            let gain = floor(random(200, 1000));
-            gameMoney += gain;
-            addGameMessage(`You successfully stole $${gain} from a rival!`, 'success');
-        } else {
-            let loss = floor(random(500, 2000));
-            gameMoney -= loss;
-            addGameMessage(`Caught by the Mafia Boss! Lost $${loss} as punishment.`, 'error');
-        }
-    }
-    
-    function handleGamble() {
-        // 50/50 win or lose, double or lose half
-        let risk = random();
-        if (risk < 0.5) {
-            let win = floor(gameMoney * 0.5);
-            gameMoney += win;
-            addGameMessage(`Lucky night! You won $${win} gambling.`, 'success');
-        } else {
-            let lose = floor(gameMoney * 0.4);
-            gameMoney -= lose;
-            addGameMessage(`Bad luck! Lost $${lose} gambling.`, 'error');
-        }
-    }
-    
-    let mafiaBribeActive = false;
-    function handleBribe() {
-        // Pay a bribe to avoid next random event
-        let bribeCost = 500;
-        if (gameMoney < bribeCost) {
-            addGameMessage("Not enough money to bribe the boss!", 'error');
-            return;
-        }
-        gameMoney -= bribeCost;
-        mafiaBribeActive = true;
-        addGameMessage("You bribed the Mafia Boss. Next random event will be ignored.", 'success');
-    }
-    
-    // Patch: Ignore next mafia random event if bribe is active
-    const originalTriggerMafiaRandomEvent = triggerMafiaRandomEvent;
-    triggerMafiaRandomEvent = function() {
-        if (mafiaBribeActive) {
-            mafiaBribeActive = false;
-            addGameMessage("Your bribe worked. No event this time.", 'success');
-            return;
-        }
-        originalTriggerMafiaRandomEvent();
-    };
 }
 
 function drawContrabandTable() {
