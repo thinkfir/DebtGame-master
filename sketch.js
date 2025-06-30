@@ -5,7 +5,7 @@ let gameLocation = "Main Menu"; // Start at the main menu
 let gameMessages = []; // Each message will be {text: "...", type: "...", timestamp: millis()}
 
 // Game state management
-let currentGameState = 'mainMenu'; // 'mainMenu', 'mafiaWars', 'stockMarket', 'wallet', 'moveRegion', 'buySellStock'
+let currentGameState = 'mainMenu'; // 'mainMenu', 'mafiaWars', 'stockMarket', 'wallet', 'moveRegion', 'buySellStock', 'winScreen', 'loseScreen'
 let selectedStockSymbol = null; // Used for the 'buySellStock' state
 let buySellQuantity = ""; // String for simulated text input quantity (for stocks)
 
@@ -149,13 +149,18 @@ function draw() {
         drawMoveRegionScreen();
     } else if (currentGameState === 'buySellStock') {
         drawBuySellStockScreen(selectedStockSymbol);
+    } else if (currentGameState === 'winScreen') {
+        drawWinScreen();
+    } else if (currentGameState === 'loseScreen') {
+        drawLoseScreen();
     }
 
-    // Always draw game info (left) and messages (right) on top of any game screen
-    drawGameInfo();
-    drawFadingMessages(); // Call the new fading messages function
-    drawDayBar(); // Always draw the day bar
-
+    // Always draw game info (left) and messages (right) on top of any game screen, unless it's a win/loss screen
+    if (currentGameState !== 'winScreen' && currentGameState !== 'loseScreen') {
+        drawGameInfo();
+        drawFadingMessages(); // Call the new fading messages function
+        drawDayBar(); // Always draw the day bar
+    }
 
     // If illegal wallet screen
     if (currentGameState === 'illegalWallet') {
@@ -333,6 +338,19 @@ function mousePressed() {
         }
 
         // Removed all explicit quantity buy/sell buttons and input field interaction
+    } else if (currentGameState === 'winScreen' || currentGameState === 'loseScreen') {
+        const playAgainBtn = {
+            x: width / 2 - (width * 0.25) / 2,
+            y: height * 0.75,
+            width: width * 0.25,
+            height: height * 0.08,
+            text: 'Play Again',
+            color: color(50, 180, 50)
+        };
+        if (isMouseOver(playAgainBtn)) {
+            resetGame();
+            loop(); // Resume draw loop
+        }
     }
 }
 
@@ -919,12 +937,17 @@ function drawLocationButtons() {
 function initializeStocks() {
     for (const region of regions) {
         for (const symbol of region.stocks) {
+            // Initial price generation
+            const initialPrice = parseFloat((random(50, 200)).toFixed(2));
+            // Dividend as a percentage of initial price (e.g., 10%)
+            const dividendValue = parseFloat((initialPrice * random(0.08, 0.12)).toFixed(2)); // 8% to 12% of initial price
+
             stocksData[symbol] = {
-                price: parseFloat((random(50, 200)).toFixed(2)), // Initial price
+                price: initialPrice,
                 prevPrice: 0, // Will be updated on first day advance
                 volatility: random(0.08, 0.25), // Increased volatility range
                 history: [], // To store price history if needed later
-                dividend: parseFloat(random(0.1, 1.0).toFixed(2)) // Added fixed daily dividend
+                dividend: dividendValue // Added fixed daily dividend
             };
         }
     }
@@ -1667,9 +1690,11 @@ function advanceDay() {
     // Check for game end condition
     if (gameMoney >= MONEY_GOAL) {
         addGameMessage(`Congratulations! You reached $${MONEY_GOAL.toLocaleString()} in ${gameDay} days! You win!`, 'success');
+        setGameState('winScreen');
         noLoop(); // Stop the game loop
     } else if (gameDay >= DAY_LIMIT) {
         addGameMessage(`Time's up! You did not reach $${MONEY_GOAL.toLocaleString()} within ${DAY_LIMIT} days. Game Over!`, 'error');
+        setGameState('loseScreen');
         noLoop(); // Stop the game loop
     }
 }
@@ -1711,4 +1736,72 @@ function drawDayBar() {
     textSize(height * 0.018);
     textAlign(CENTER, CENTER);
     text(`Goal: $${gameMoney.toLocaleString()} / $${MONEY_GOAL.toLocaleString()} | Day: ${gameDay} / ${DAY_LIMIT}`, barX + barWidth / 2, barY + barHeight / 2);
+}
+
+// --- NEW: Win/Lose Screens ---
+
+function drawWinScreen() {
+    background(20, 50, 30); // Greenish-dark background for win screen
+
+    // "You Won!" title
+    fill(100, 255, 100); // Bright green
+    textFont('monospace');
+    textSize(width * 0.08);
+    textAlign(CENTER, CENTER);
+    drawingContext.shadowBlur = 30;
+    drawingContext.shadowColor = 'lime';
+    text("YOU WON!", width / 2, height * 0.3);
+    drawingContext.shadowBlur = 0;
+    drawingContext.shadowColor = 'rgba(0,0,0,0)';
+
+    // Win details
+    fill(240, 245, 250);
+    textSize(width * 0.025);
+    text(`Congratulations! You reached $${MONEY_GOAL.toLocaleString()}!`, width / 2, height * 0.45);
+    text(`Final Money: $${gameMoney.toLocaleString()}`, width / 2, height * 0.52);
+    text(`Days Taken: ${gameDay}`, width / 2, height * 0.59);
+
+    // Play Again button
+    const playAgainBtn = {
+        x: width / 2 - (width * 0.25) / 2,
+        y: height * 0.75,
+        width: width * 0.25,
+        height: height * 0.08,
+        text: 'Play Again',
+        color: color(50, 180, 50)
+    };
+    drawButton(playAgainBtn);
+}
+
+function drawLoseScreen() {
+    background(50, 20, 20); // Reddish-dark background for lose screen
+
+    // "Game Over" title
+    fill(255, 100, 100); // Bright red
+    textFont('monospace');
+    textSize(width * 0.08);
+    textAlign(CENTER, CENTER);
+    drawingContext.shadowBlur = 30;
+    drawingContext.shadowColor = 'red';
+    text("GAME OVER", width / 2, height * 0.3);
+    drawingContext.shadowBlur = 0;
+    drawingContext.shadowColor = 'rgba(0,0,0,0)';
+
+    // Lose details
+    fill(240, 245, 250);
+    textSize(width * 0.025);
+    text(`You did not reach $${MONEY_GOAL.toLocaleString()} in ${DAY_LIMIT} days.`, width / 2, height * 0.45);
+    text(`Final Money: $${gameMoney.toLocaleString()}`, width / 2, height * 0.52);
+    text(`Days Played: ${gameDay}`, width / 2, height * 0.59);
+
+    // Play Again button
+    const playAgainBtn = {
+        x: width / 2 - (width * 0.25) / 2,
+        y: height * 0.75,
+        width: width * 0.25,
+        height: height * 0.08,
+        text: 'Play Again',
+        color: color(180, 50, 50) // Reddish button
+    };
+    drawButton(playAgainBtn);
 }
