@@ -541,11 +541,11 @@ function drawMainMenu() {
 }
     // Generic function to draw a button with enhanced styling
 function drawButton(button) {
-    // --- RETRO BUTTON STYLE (BRIGHT BUTTON, ALWAYS NEON TEXT) ---
+    // --- RETRO BUTTON STYLE (NO NEON TEXT) ---
     let btnColor = color(0, 255, 120); // Neon green default
     if (button.color) btnColor = button.color;
 
-    let textColor = color(220, 255, 220);
+    let textColor = color(220, 230, 220); // Muted light gray-green
 
     // Retro darken on hover
     if (isMouseOver(button)) {
@@ -568,17 +568,15 @@ function drawButton(button) {
     const buttonRadius = button.height / 2;
     rect(button.x, button.y, button.width, button.height, buttonRadius);
 
-    // Retro pixel font
+    // Retro pixel font, no glow
     textFont('monospace');
     fill(textColor);
     textSize(button.height * 0.45);
     textAlign(CENTER, CENTER);
     if (button.text !== null) {
-        drawingContext.shadowBlur = 4;
-        drawingContext.shadowColor = 'rgba(200,255,200,0.5)';
-        text(button.text, button.x + button.width / 2, button.y + button.height / 2);
         drawingContext.shadowBlur = 0;
         drawingContext.shadowColor = 'rgba(0,0,0,0)';
+        text(button.text, button.x + button.width / 2, button.y + button.height / 2);
     }
     noStroke();
 }
@@ -1053,49 +1051,47 @@ function setupStockMarketButtons() {
 }
 
 function drawStockMarketScreen() {
-    background(35, 45, 60); // Dark, desaturated blue-gray background, replacing green
+    // --- FULL RETRO THEME FOR STOCK MARKET ---
+    background(10, 12, 24); // Deep retro blue-black
 
-    // Region Display Panel
+    // Retro border
+    stroke(80, 255, 180, 80);
+    strokeWeight(4);
+    noFill();
+    rect(width * 0.04, height * 0.04, width * 0.92, height * 0.92, 24);
+    noStroke();
+
+    // Retro region panel
+    fill(30, 40, 60, 180);
+    stroke(120, 255, 200, 80);
+    strokeWeight(2);
     const regionPanelWidth = width * 0.6;
     const regionPanelHeight = height * 0.1;
     const regionPanelX = width / 2 - regionPanelWidth / 2;
-    const regionPanelY = height * 0.15; // Position below main title
+    const regionPanelY = height * 0.15;
+    rect(regionPanelX, regionPanelY, regionPanelWidth, regionPanelHeight, 16);
+    noStroke();
 
-    // Modern flat/subtle design for region panel
-    fill(45, 55, 70); // Slightly lighter than background
-    stroke(80, 95, 110); // Subtle light border
-    strokeWeight(1);
-    rect(regionPanelX, regionPanelY, regionPanelWidth, regionPanelHeight, 10); // Slightly rounded corners
-
-    // Add a very subtle inner shadow for depth
-    drawingContext.shadowOffsetX = 0;
-    drawingContext.shadowOffsetY = 2;
-    drawingContext.shadowBlur = 5;
-    drawingContext.shadowColor = 'rgba(0,0,0,0.3)';
-    rect(regionPanelX, regionPanelY, regionPanelWidth, regionPanelHeight, 10);
-    drawingContext.shadowBlur = 0;
-    drawingContext.shadowColor = 'rgba(0,0,0,0)';
-
-    fill(240, 245, 250); // Off-white for readability
-    textSize(width * 0.028); // Slightly smaller, sleeker text
+    // Retro region name
+    fill(210, 230, 200);
+    textFont('Courier New');
+    textSize(width * 0.03);
     textAlign(CENTER, CENTER);
     text(regions[currentRegionIndex].name, regionPanelX + regionPanelWidth / 2, regionPanelY + regionPanelHeight / 2);
 
-
-    // Draw stock tiles
+    // Draw stock tiles (retro style)
     const stocksInRegion = regions[currentRegionIndex].stocks;
     const numStocks = stocksInRegion.length;
-    const tileWidth = width * 0.17; // Adjust tile width
-    const tileHeight = height * 0.18; // Taller tiles for more info
-    const tileGapX = width * 0.015; // Reduced gap
+    const tileWidth = width * 0.17;
+    const tileHeight = height * 0.18;
+    const tileGapX = width * 0.015;
     const tileGapY = height * 0.02;
 
-    // Calculate starting X to center the tiles
     const totalTilesWidth = numStocks * tileWidth + (numStocks - 1) * tileGapX;
     let startX = (width - totalTilesWidth) / 2;
-    const startY = height * 0.3; // Position below region panel
+    const startY = height * 0.3;
 
-    stockTiles = []; // Clear and re-populate for current view
+    stockTiles = [];
 
     for (let i = 0; i < numStocks; i++) {
         const symbol = stocksInRegion[i];
@@ -1105,66 +1101,45 @@ function drawStockMarketScreen() {
 
         stockTiles.push({ x: tileX, y: tileY, width: tileWidth, height: tileHeight, symbol: symbol });
 
-        // Tile background with subtle modern look
-        let tileBaseColor = color(50, 60, 75); // Dark blue-gray
-        let tileHoverColor = color(70, 85, 100); // Lighter blue-gray on hover
-
-        let currentTileColor = tileBaseColor;
-        if (isMouseOver(stockTiles[i])) {
-            currentTileColor = tileHoverColor;
-            cursor(HAND);
-        } else {
-            cursor(ARROW);
-        }
-
-        // Apply outer shadow for depth
-        drawingContext.shadowOffsetX = 0;
-        drawingContext.shadowOffsetY = 5;
-        drawingContext.shadowBlur = 10;
-        drawingContext.shadowColor = 'rgba(0,0,0,0.4)';
-
-        fill(currentTileColor);
+        // Retro tile background
+        fill(24, 32, 48, 220);
+        stroke(120, 255, 200, 80);
+        strokeWeight(2);
+        rect(tileX, tileY, tileWidth, tileHeight, 10);
         noStroke();
-        rect(tileX, tileY, tileWidth, tileHeight, 12); // Rounded corners
 
-        drawingContext.shadowBlur = 0;
-        drawingContext.shadowColor = 'rgba(0,0,0,0)'; // Reset shadow
-
-        // Inner border for crispness
-        stroke(100, 115, 130);
-        strokeWeight(1);
-        noFill();
-        rect(tileX, tileY, tileWidth, tileHeight, 12);
-
-        // Stock Info - Symbols (top center)
-        fill(240, 245, 250); // Off-white
-        textSize(tileHeight * 0.22); // Responsive text size
+        // Stock Info - Symbols (top center, retro)
+        fill(210, 230, 200);
+        textFont('Courier New');
+        textSize(tileHeight * 0.18);
         textAlign(CENTER, TOP);
         text(symbol, tileX + tileWidth / 2, tileY + tileHeight * 0.1);
 
-        // Current Price (middle center)
-        fill(255, 230, 0); // Gold-yellow for price
-        textSize(tileHeight * 0.28); // Larger, more prominent price
+        // Current Price (middle center, retro)
+        fill(255, 230, 120);
+        textFont('Courier New');
+        textSize(tileHeight * 0.22);
         text(`$${stock.price.toFixed(2)}`, tileX + tileWidth / 2, tileY + tileHeight * 0.45);
 
-        // Price change indicator (bottom center)
+        // Price change indicator (bottom center, retro)
         if (stock.prevPrice !== 0) {
             const change = stock.price - stock.prevPrice;
             let changeColor;
             let arrow = '';
 
             if (change > 0) {
-                changeColor = color(50, 220, 100); // Muted green for positive
+                changeColor = color(120, 255, 120);
                 arrow = '▲ ';
             } else if (change < 0) {
-                changeColor = color(220, 80, 80); // Muted red for negative
+                changeColor = color(255, 120, 120);
                 arrow = '▼ ';
             } else {
-                changeColor = color(180, 180, 180); // Gray for no change
+                changeColor = color(180, 180, 180);
             }
 
             fill(changeColor);
-            textSize(tileHeight * 0.15); // Smaller text for change
+            textFont('Courier New');
+            textSize(tileHeight * 0.13);
             text(`${arrow}${abs(change).toFixed(2)}`, tileX + tileWidth / 2, tileY + tileHeight * 0.75);
         }
     }
@@ -1173,7 +1148,7 @@ function drawStockMarketScreen() {
     drawButton(btnNextDay);
     drawButton(btnMoveRegion);
     drawButton(btnWallet);
-    drawButton(btnBackToMain); // Back to main menu
+    drawButton(btnBackToMain);
 }
 
 function drawWalletScreen() {
