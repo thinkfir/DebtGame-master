@@ -5,7 +5,7 @@
 ---
 
 ## URL
-**URL** = 
+**URL** = https://moneymastermind.netlify.app/
 
 ## Game Objective
 
