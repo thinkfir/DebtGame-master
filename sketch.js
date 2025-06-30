@@ -24,7 +24,7 @@ const MESSAGE_TOTAL_DURATION = MESSAGE_FADE_IN_DURATION + MESSAGE_HOLD_DURATION 
 const MESSAGE_MAX_DISPLAY_HEIGHT_FACTOR = 0.05; // Percentage of canvas height for message area
 const MESSAGE_LINE_HEIGHT_FACTOR = 0.03; // Percentage of canvas height for each message line
 
-// Constant for blinking effect
+// Constant for blinking effect (not currently used but kept for reference)
 const BLINK_INTERVAL = 700; // milliseconds for one phase (e.g., 700ms on, 700ms off)
 
 // --- Stock Market Variables ---
@@ -82,9 +82,17 @@ const MAFIA_TRAVEL_COSTS = {
 let mafiaTableX, mafiaTableY, mafiaColWidth, mafiaActionColWidth, mafiaRowHeight, mafiaBtnPadding;
 let mafiaInputX, mafiaInputY, mafiaInputWidth, mafiaInputHeight, mafiaButtonWidth, mafiaPadding;
 
+// Mafia Daily Transaction Limits
+const MAFIA_MAX_DAILY_TRANSACTIONS = 3;
+let mafiaDailyBuys = 0;
+let mafiaDailySells = 0;
+
+// Game Goal and Day Limit
+const MONEY_GOAL = 10000; // User needs to get $10,000
+const DAY_LIMIT = 100;    // Within 100 days
 
 // --- Global UI Elements ---
-let btnAdvanceDayGlobal; // New global button for advancing day
+let btnAdvanceDayGlobal; // Global button for advancing day
 
 // p5.js setup function - runs once when the sketch starts
 function setup() {
@@ -96,10 +104,11 @@ function setup() {
     initializeStocks();
 
     // Initialize Mafia Wars data
-    initializeMafiaWars();
+    initializeMafiaWars(); // Now initializes daily limits too
 
     // Initial game message
     addGameMessage("Welcome to Debt Game!");
+    addGameMessage(`Reach $${MONEY_GOAL.toLocaleString()} within ${DAY_LIMIT} days!`, 'info');
 
     // Setup title and button positions based on new full-screen canvas
     setupCanvasTitle();
@@ -146,6 +155,8 @@ function draw() {
     // Always draw game info (left) and messages (right) on top of any game screen
     drawGameInfo();
     drawFadingMessages(); // Call the new fading messages function
+    drawDayBar(); // Always draw the day bar
+
 
     // If illegal wallet screen
     if (currentGameState === 'illegalWallet') {
@@ -286,7 +297,6 @@ function mousePressed() {
             }
         }
 
-
         // Buy/Sell buttons (quick buy/sell 1 for each row)
         // Now using the consistent global mafia table constants
         const buyBtnWidth = mafiaActionColWidth * 0.45;
@@ -310,68 +320,55 @@ function mousePressed() {
                 height: buyBtnHeight
             };
 
-            // Removed temporary red rects here.
-            // noFill();
-            // stroke(255, 0, 0);
-            // rect(buyBtn.x, buyBtn.y, buyBtn.width, buyBtn.height);
-            // rect(sellBtn.x, sellBtn.y, sellBtn.width, sellBtn.height);
-            // noStroke();
-
             if (isMouseOver(buyBtn)) {
                 selectedContraband = item;
-                mafiaBuySellQuantity = "";
-                handleBuySellContraband(item, 'buy', 1);
+                // mafiaBuySellQuantity = ""; // Removed to not clear input for quick buy/sell
+                handleBuySellContraband(item, 'buy', 1); // Pass quantity 1 for quick buy
                 return;
             } else if (isMouseOver(sellBtn)) {
                 selectedContraband = item;
-                mafiaBuySellQuantity = "";
-                handleBuySellContraband(item, 'sell', 1);
+                // mafiaBuySellQuantity = ""; // Removed to not clear input for quick buy/sell
+                handleBuySellContraband(item, 'sell', 1); // Pass quantity 1 for quick sell
                 return;
             }
         }
 
-        // Handle explicit quantity buy/sell buttons
-        // Now using the consistent global mafia input constants
-        // Smooth pill-shaped input box
-        const inputRadius = mafiaInputHeight / 2;
-        fill(30, 40, 50);
-        stroke(100, 115, 130);
-        strokeWeight(1);
-        rect(mafiaInputX, mafiaInputY, mafiaInputWidth, mafiaInputHeight, inputRadius);
-
-        // Show "type..." when focused and empty
-        noStroke();
-        fill(240, 245, 250);
-        textSize(width * 0.022);
-        textAlign(CENTER, CENTER);
-        let mafiaInputDisplay = mafiaBuySellQuantity;
-        if (mafiaInputFocused && mafiaBuySellQuantity === "") {
-            fill(180, 180, 180);
-            mafiaInputDisplay = "type...";
-        }
-        text(mafiaInputDisplay || 'Enter Qty', mafiaInputX + mafiaInputWidth / 2, mafiaInputY + mafiaInputHeight / 2);
-
-        if (selectedContraband && mafiaBuySellQuantity !== "" && !isNaN(int(mafiaBuySellQuantity))) {
-            const qty = int(mafiaBuySellQuantity);
-            // Check if the buy with quantity button was pressed
-            const buyWithQtyBtn = { x: mafiaInputX + mafiaInputWidth + mafiaPadding, y: mafiaInputY, width: mafiaButtonWidth, height: mafiaInputHeight };
-            if (isMouseOver(buyWithQtyBtn)) { // FIXED: Added calls to handleBuySellContraband
-                handleBuySellContraband(selectedContraband, 'buy', qty);
-                mafiaBuySellQuantity = "";
-                selectedContraband = null; // Deselect after action
-                return;
+        // Handle explicit quantity buy/sell buttons (if a specific contraband is selected)
+        if (selectedContraband) { // Only show/interact with input if an item is selected
+            // Now using the consistent global mafia input constants
+            // Smooth pill-shaped input box
+            const inputRadius = mafiaInputHeight / 2;
+            
+            // Check if the input field itself was clicked
+            const inputRect = { x: mafiaInputX, y: mafiaInputY, width: mafiaInputWidth, height: mafiaInputHeight };
+            if (isMouseOver(inputRect)) {
+                mafiaInputFocused = true;
+                addGameMessage("Input field active.", 'info');
+                return; // Prevent other clicks if input field is clicked
+            } else {
+                mafiaInputFocused = false; // Reset focus if clicked outside
             }
-            // Check if the sell with quantity button was pressed
-            const sellWithQtyBtn = { x: buyWithQtyBtn.x + buyWithQtyBtn.width + mafiaPadding / 2, y: mafiaInputY, width: mafiaButtonWidth, height: mafiaInputHeight };
-            if (isMouseOver(sellWithQtyBtn)) { // FIXED: Added calls to handleBuySellContraband
-                handleBuySellContraband(selectedContraband, 'sell', qty);
-                mafiaBuySellQuantity = "";
-                selectedContraband = null; // Deselect after action
-                return;
+
+            if (mafiaBuySellQuantity !== "" && !isNaN(int(mafiaBuySellQuantity))) {
+                const qty = int(mafiaBuySellQuantity);
+                // Check if the buy with quantity button was pressed
+                const buyWithQtyBtn = { x: mafiaInputX + mafiaInputWidth + mafiaPadding, y: mafiaInputY, width: mafiaButtonWidth, height: mafiaInputHeight };
+                if (isMouseOver(buyWithQtyBtn)) {
+                    handleBuySellContraband(selectedContraband, 'buy', qty);
+                    mafiaBuySellQuantity = "";
+                    // selectedContraband = null; // Don't deselect to allow quick follow-up
+                    return;
+                }
+                // Check if the sell with quantity button was pressed
+                const sellWithQtyBtn = { x: buyWithQtyBtn.x + buyWithQtyBtn.width + mafiaPadding / 2, y: mafiaInputY, width: mafiaButtonWidth, height: mafiaInputHeight };
+                if (isMouseOver(sellWithQtyBtn)) {
+                    handleBuySellContraband(selectedContraband, 'sell', qty);
+                    mafiaBuySellQuantity = "";
+                    // selectedContraband = null; // Don't deselect to allow quick follow-up
+                    return;
+                }
             }
         }
-        // If clicking on a table row (not the buttons), select that contraband for input
-        // (Removed code for selecting contraband and showing input)
     }
 }
 
@@ -380,11 +377,18 @@ function keyPressed() {
     if (currentGameState === 'buySellStock') {
         if (keyCode === BACKSPACE) {
             buySellQuantity = buySellQuantity.substring(0, buySellQuantity.length - 1);
-        } else if (key >= '0' && key <= '9') {
+        } else if (key >= '0' && key <= '9' && buySellQuantity.length < 5) { // Limit input length
             buySellQuantity += key;
         }
     }
-    // Mafia Wars buy/sell quantity input removed
+    // Mafia Wars explicit quantity input
+    if (currentGameState === 'mafiaWars' && mafiaInputFocused) {
+        if (keyCode === BACKSPACE) {
+            mafiaBuySellQuantity = mafiaBuySellQuantity.substring(0, mafiaBuySellQuantity.length - 1);
+        } else if (key >= '0' && key <= '9' && mafiaBuySellQuantity.length < 5) { // Limit input length
+            mafiaBuySellQuantity += key;
+        }
+    }
 }
 
 // Helper function to check if mouse is over a button
@@ -393,7 +397,16 @@ function isMouseOver(button) {
            mouseY > button.y && mouseY < button.y + button.height;
 }
 
-// Mafia input focus helper removed
+// Mafia input focus helper
+let mafiaInputFocused = false;
+// Renamed mouseClicked to mouseReleased to avoid conflicts if needed, but for p5 it's often better to just use mousePressed
+// The logic for setting mafiaInputFocused is now moved directly into mousePressed in the mafiaWars state
+function mouseReleased() {
+    // This function is often used for drag-and-drop or when a click completes after mouse up.
+    // For simple button clicks, mousePressed is usually sufficient.
+    // The mafiaInputFocused logic has been moved to mousePressed for direct interaction.
+}
+
 
 // --- Canvas Title Drawing ---
 function setupCanvasTitle() {
@@ -580,6 +593,10 @@ function initializeMafiaWars() {
     selectedContraband = null;
     mafiaInputFocused = false; // Initialize the focus state
     lastMafiaPriceUpdateTime = millis(); // Initialize timestamp for dynamic prices
+
+    // NEW: Initialize daily transaction counts
+    mafiaDailyBuys = 0;
+    mafiaDailySells = 0;
 }
 
 // NEW FUNCTION: Setup Mafia Wars Layout Constants
@@ -646,6 +663,19 @@ function handleBuySellContraband(item, type, quantity) {
         return;
     }
 
+    // Daily transaction limit checks
+    if (type === 'buy') {
+        if (mafiaDailyBuys >= MAFIA_MAX_DAILY_TRANSACTIONS) {
+            addGameMessage(`Daily buy limit (${MAFIA_MAX_DAILY_TRANSACTIONS}) reached.`, 'error');
+            return;
+        }
+    } else { // sell
+        if (mafiaDailySells >= MAFIA_MAX_DAILY_TRANSACTIONS) {
+            addGameMessage(`Daily sell limit (${MAFIA_MAX_DAILY_TRANSACTIONS}) reached.`, 'error');
+            return;
+        }
+    }
+
     const price = mafiaContrabandPrices[item];
     const cost = price * quantity;
     const currentInventory = mafiaPlayerInventory[item] || 0;
@@ -664,6 +694,7 @@ function handleBuySellContraband(item, type, quantity) {
 
         gameMoney -= cost;
         mafiaPlayerInventory[item] += quantity;
+        mafiaDailyBuys++; // Increment daily buy count
         addGameMessage(`Acquired ${quantity} ${item} for $${cost.toFixed(2)}.`, 'success');
         updateMoney(0); // Trigger display update
     } else { // sell
@@ -676,6 +707,7 @@ function handleBuySellContraband(item, type, quantity) {
         const revenue = price * quantity;
         gameMoney += revenue;
         mafiaPlayerInventory[item] -= quantity;
+        mafiaDailySells++; // Increment daily sell count
         addGameMessage(`Offloaded ${quantity} ${item} for $${revenue.toFixed(2)}.`, 'success');
         updateMoney(0); // Trigger display update
     }
@@ -828,7 +860,11 @@ function drawContrabandTable() {
         textAlign(CENTER, CENTER);
         text(item, tableX + colWidth * 0.5, yPos + rowHeight / 2);
         text(`$${mafiaContrabandPrices[item].toFixed(2)}`, tableX + colWidth * 1.5, yPos + rowHeight / 2);
-        text(mafiaPlayerInventory[item], tableX + colWidth * 2.5, yPos + rowHeight / 2); // Display owned quantity
+        
+        // Adjust the X position for "Owned" to space it from buy/sell
+        // This moves the owned text slightly to the left relative to its column center
+        text(mafiaPlayerInventory[item], tableX + colWidth * 2.5 - (colWidth * 0.05), yPos + rowHeight / 2); // 0.05 is an example offset
+
 
         // Buy/Sell buttons for each row (quick buy/sell 1)
         const buyBtnWidth = actionColWidth * 0.45; // Adjusted size
@@ -843,7 +879,8 @@ function drawContrabandTable() {
             height: buyBtnHeight,
             text: 'Buy',
             color: color(0),
-            mutedText: currentGameState === 'mafiaWars'
+            // Pass 'disabled' state based on daily limits
+            disabled: mafiaDailyBuys >= MAFIA_MAX_DAILY_TRANSACTIONS
         });
         // Sell button
         drawButton({
@@ -853,7 +890,8 @@ function drawContrabandTable() {
             height: buyBtnHeight,
             text: 'Sell',
             color: color(0),
-            mutedText: currentGameState === 'mafiaWars'
+            // Pass 'disabled' state based on daily limits
+            disabled: mafiaDailySells >= MAFIA_MAX_DAILY_TRANSACTIONS
         });
     }
 
@@ -862,14 +900,63 @@ function drawContrabandTable() {
     stroke(100, 100, 100);
     strokeWeight(1);
     rect(tableX, tableY, colWidth * 3 + actionColWidth, rowHeight * (contrabandTypes.length + 1), 8); // Adjusted total width
+
+    // Display daily limits
+    const limitDisplayX = tableX + colWidth * 3 + actionColWidth + width * 0.02; // To the right of the table
+    const limitDisplayY = tableY;
+    
+    fill(240, 245, 250);
+    textSize(height * 0.022);
+    textAlign(LEFT, TOP);
+    text("Daily Limits:", limitDisplayX, limitDisplayY);
+    
+    // Change color based on limit
+    fill(mafiaDailyBuys >= MAFIA_MAX_DAILY_TRANSACTIONS ? color(255, 100, 100) : color(100, 255, 100));
+    text(`Buys: ${mafiaDailyBuys}/${MAFIA_MAX_DAILY_TRANSACTIONS}`, limitDisplayX, limitDisplayY + height * 0.03);
+    
+    fill(mafiaDailySells >= MAFIA_MAX_DAILY_TRANSACTIONS ? color(255, 100, 100) : color(100, 255, 100));
+    text(`Sells: ${mafiaDailySells}/${MAFIA_MAX_DAILY_TRANSACTIONS}`, limitDisplayX, limitDisplayY + height * 0.06);
+
 }
 
 
 function drawBuySellInput() {
-    // This function is now intentionally left blank to remove the input area and buttons.
-    // If you plan to re-introduce a specific buy/sell input for Mafia Wars,
-    // you would move the related drawing logic here and ensure its coordinates
-    // are consistent with mousePressed.
+    // This function is currently empty, as the simple buy/sell buttons are handled within drawContrabandTable.
+    // If you wish to re-introduce a separate input field for specific quantities, uncomment and use this function.
+
+    // Example of re-introducing an input field:
+    if (selectedContraband) {
+        const inputX = mafiaInputX;
+        const inputY = mafiaInputY;
+        const inputWidth = mafiaInputWidth;
+        const inputHeight = mafiaInputHeight;
+        const buttonWidth = mafiaButtonWidth;
+        const padding = mafiaPadding;
+
+        // Draw input field background
+        fill(30, 40, 50);
+        stroke(100, 115, 130);
+        strokeWeight(1);
+        rect(inputX, inputY, inputWidth, inputHeight, inputHeight / 2);
+
+        // Input text (blinking cursor if focused)
+        fill(240, 245, 250);
+        textSize(width * 0.022);
+        textAlign(CENTER, CENTER);
+        let currentInputText = mafiaBuySellQuantity;
+        if (mafiaInputFocused && floor(millis() / BLINK_INTERVAL) % 2 === 0) {
+            currentInputText += '|'; // Add blinking cursor
+        }
+        text(currentInputText || 'Enter Qty', inputX + inputWidth / 2, inputY + inputHeight / 2);
+
+        // Buy with quantity button
+        const buyWithQtyBtn = { x: inputX + inputWidth + padding, y: inputY, width: buttonWidth, height: inputHeight, text: 'Buy Qty', color: color(50, 180, 50) };
+        drawButton(buyWithQtyBtn);
+
+        // Sell with quantity button
+        const sellWithQtyBtn = { x: buyWithQtyBtn.x + buyWithQtyBtn.width + padding / 2, y: inputY, width: buttonWidth, height: inputHeight, text: 'Sell Qty', color: color(220, 50, 50) };
+        drawButton(sellWithQtyBtn);
+    }
 }
 
 
@@ -1191,7 +1278,7 @@ function drawIllegalWalletScreen() {
     fill(255);
     textSize(width * 0.018);
     textAlign(CENTER, CENTER);
-    text(`${totalContraband} / 30 contraband`, width / 2, barY + barH / 2);
+    text(`${totalContraband} / ${MAFIA_MAX_INVENTORY_PER_ITEM} contraband`, width / 2, barY + barH / 2);
 
     // Draw inventory table
     const tableX = width * 0.25;
@@ -1482,7 +1569,7 @@ function drawGameInfo() {
     drawingContext.shadowColor = 'rgba(0,0,0,0.5)';
 
 
-    let currentTextY = boxY + padding + textBaseSize * 0.8; // Start point for first line
+    let currentTextY = boxY + padding + textBaseSize * 0.8; // Start point for first line (using boxY for consistent padding)
 
     // Money
     textSize(textBaseSize);
@@ -1614,23 +1701,72 @@ function resetGame() {
     gameMessages = []; // Clear all messages immediately on reset
     initializeStocks(); // Re-initialize stock prices and clear portfolio
     playerPortfolio = {};
-    initializeMafiaWars(); // Reset Mafia Wars state
+    initializeMafiaWars(); // Reset Mafia Wars state (includes daily transaction limits)
 
     addGameMessage("Game reset. Welcome back!");
+    addGameMessage(`Reach $${MONEY_GOAL.toLocaleString()} within ${DAY_LIMIT} days!`, 'info');
     setGameState('mainMenu'); // Go back to main menu
 }
 
 // Example functions for game progress
 function advanceDay() {
     gameDay++;
+    // Reset daily buy/sell counts for Mafia Wars
+    mafiaDailyBuys = 0;
+    mafiaDailySells = 0;
+
     if (currentGameState === 'stockMarket') {
         advanceStockPrices(); // Update stock prices when day advances if in stock market
     }
-    // Removed Mafia Wars price update from here, as it's now time-based.
+    // Mafia Wars price update is now time-based, not day-based.
+
     addGameMessage(`Advanced to Day ${gameDay}.`);
+
+    // Check for game end condition
+    if (gameMoney >= MONEY_GOAL) {
+        addGameMessage(`Congratulations! You reached $${MONEY_GOAL.toLocaleString()} in ${gameDay} days! You win!`, 'success');
+        noLoop(); // Stop the game loop
+    } else if (gameDay >= DAY_LIMIT) {
+        addGameMessage(`Time's up! You did not reach $${MONEY_GOAL.toLocaleString()} within ${DAY_LIMIT} days. Game Over!`, 'error');
+        noLoop(); // Stop the game loop
+    }
 }
 
 function updateMoney(amount) {
     gameMoney += amount;
     addGameMessage(`Money changed by $${amount}. Current: $${gameMoney.toLocaleString()}`, amount >= 0 ? 'success' : 'error');
+}
+
+// Draw the Day Bar (Money Goal and Day Limit)
+function drawDayBar() {
+    const barX = width * 0.28; // Centered
+    const barY = height * 0.96; // At the bottom
+    const barWidth = width * 0.45;
+    const barHeight = height * 0.03;
+    const cornerRadius = 5;
+
+    // Background bar
+    fill(20, 20, 30);
+    stroke(80, 100, 120);
+    strokeWeight(1);
+    rect(barX, barY, barWidth, barHeight, cornerRadius);
+
+    // Money Progress Bar
+    // Clamp moneyProgress to stay within barWidth
+    let moneyProgress = map(gameMoney, 0, MONEY_GOAL, 0, barWidth, true);
+    fill(50, 200, 50); // Green for money progress
+    rect(barX, barY, moneyProgress, barHeight, cornerRadius);
+
+    // Day Progress Overlay
+    // Clamp dayProgress to stay within barWidth
+    let dayProgress = map(gameDay, 0, DAY_LIMIT, 0, barWidth, true);
+    // Draw a subtle overlay for day progress
+    fill(200, 200, 50, 80); // Yellowish, semi-transparent
+    rect(barX, barY, dayProgress, barHeight, cornerRadius);
+
+    // Text overlay
+    fill(255);
+    textSize(height * 0.018);
+    textAlign(CENTER, CENTER);
+    text(`Goal: $${gameMoney.toLocaleString()} / $${MONEY_GOAL.toLocaleString()} | Day: ${gameDay} / ${DAY_LIMIT}`, barX + barWidth / 2, barY + barHeight / 2);
 }
