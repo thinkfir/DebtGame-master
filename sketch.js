@@ -560,8 +560,7 @@ function drawButton(button) {
     }
 
     // Retro border
-    stroke(0, 255, 120);
-    strokeWeight(3);
+    noStroke();
     fill(btnColor);
 
     // Pill shape
@@ -570,7 +569,8 @@ function drawButton(button) {
 
     // Retro pixel font, no glow
     textFont('monospace');
-    fill(textColor);
+    noStroke();
+    fill(255); // Pure white text
     textSize(button.height * 0.45);
     textAlign(CENTER, CENTER);
     if (button.text !== null) {
@@ -578,7 +578,6 @@ function drawButton(button) {
         drawingContext.shadowColor = 'rgba(0,0,0,0)';
         text(button.text, button.x + button.width / 2, button.y + button.height / 2);
     }
-    noStroke();
 }
 
 // --- Global UI Buttons ---
@@ -767,6 +766,47 @@ function drawMafiaWarsScreen() {
     const btnIllegalWallet = { x: width * 0.02, y: height * 0.18, width: width * 0.18, height: height * 0.06, text: 'Illegal Wallet', color: color(80, 80, 80) };
     drawButton(btnIllegalWallet);
 
+    // --- ORGANIZED ACTION BUTTONS ON THE RIGHT ---
+    // Place all action buttons in a vertical stack below Next Day
+    const actionBtnWidth = btnAdvanceDayGlobal.width;
+    const actionBtnHeight = height * 0.06;
+    const actionBtnX = btnAdvanceDayGlobal.x;
+    const actionBtnYStart = btnAdvanceDayGlobal.y + btnAdvanceDayGlobal.height + height * 0.025;
+    const actionBtnGap = height * 0.015;
+
+    // Steal button (risk/reward)
+    const btnSteal = {
+        x: actionBtnX,
+        y: actionBtnYStart,
+        width: actionBtnWidth,
+        height: actionBtnHeight,
+        text: 'Steal (Risky)',
+        color: color(120, 60, 180)
+    };
+    drawButton(btnSteal);
+
+    // Gamble button
+    const btnGamble = {
+        x: actionBtnX,
+        y: actionBtnYStart + actionBtnHeight + actionBtnGap,
+        width: actionBtnWidth,
+        height: actionBtnHeight,
+        text: 'Gamble',
+        color: color(180, 120, 60)
+    };
+    drawButton(btnGamble);
+
+    // Bribe button
+    const btnBribe = {
+        x: actionBtnX,
+        y: actionBtnYStart + 2 * (actionBtnHeight + actionBtnGap),
+        width: actionBtnWidth,
+        height: actionBtnHeight,
+        text: 'Bribe Boss',
+        color: color(200, 180, 60)
+    };
+    drawButton(btnBribe);
+
     // Current Location Display (muted)
     fill(180, 200, 210);
     textFont('Courier New');
@@ -801,6 +841,60 @@ function drawMafiaWarsScreen() {
         mafiaContrabandPrices = generateMafiaPrices(currentMafiaLocation);
         lastMafiaPriceUpdateTime = millis();
     }
+    
+    // --- Mafia Wars Action Logic ---
+    
+    function handleSteal() {
+        // 40% chance to succeed, 60% chance to lose big
+        let risk = random();
+        if (risk < 0.4) {
+            let gain = floor(random(200, 1000));
+            gameMoney += gain;
+            addGameMessage(`You successfully stole $${gain} from a rival!`, 'success');
+        } else {
+            let loss = floor(random(500, 2000));
+            gameMoney -= loss;
+            addGameMessage(`Caught by the Mafia Boss! Lost $${loss} as punishment.`, 'error');
+        }
+    }
+    
+    function handleGamble() {
+        // 50/50 win or lose, double or lose half
+        let risk = random();
+        if (risk < 0.5) {
+            let win = floor(gameMoney * 0.5);
+            gameMoney += win;
+            addGameMessage(`Lucky night! You won $${win} gambling.`, 'success');
+        } else {
+            let lose = floor(gameMoney * 0.4);
+            gameMoney -= lose;
+            addGameMessage(`Bad luck! Lost $${lose} gambling.`, 'error');
+        }
+    }
+    
+    let mafiaBribeActive = false;
+    function handleBribe() {
+        // Pay a bribe to avoid next random event
+        let bribeCost = 500;
+        if (gameMoney < bribeCost) {
+            addGameMessage("Not enough money to bribe the boss!", 'error');
+            return;
+        }
+        gameMoney -= bribeCost;
+        mafiaBribeActive = true;
+        addGameMessage("You bribed the Mafia Boss. Next random event will be ignored.", 'success');
+    }
+    
+    // Patch: Ignore next mafia random event if bribe is active
+    const originalTriggerMafiaRandomEvent = triggerMafiaRandomEvent;
+    triggerMafiaRandomEvent = function() {
+        if (mafiaBribeActive) {
+            mafiaBribeActive = false;
+            addGameMessage("Your bribe worked. No event this time.", 'success');
+            return;
+        }
+        originalTriggerMafiaRandomEvent();
+    };
 }
 
 function drawContrabandTable() {
