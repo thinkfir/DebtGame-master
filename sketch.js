@@ -61,8 +61,6 @@ const contrabandTypes = ['Bliss Dust', 'Shadow Bloom', 'Viper Venom', 'Crimson H
 let currentMafiaLocation = 'New York';
 let mafiaContrabandPrices = {}; // { 'Bliss Dust': 20, 'Shadow Bloom': 2000, ... }
 let mafiaPlayerInventory = {}; // { 'Bliss Dust': 0, 'Shadow Bloom': 5, ... }
-let mafiaBuySellQuantity = ""; // Input for buy/sell in Mafia Wars
-let mafiaInputFocused = false; // Track focus for Mafia Wars quantity input
 let selectedContraband = null; // Currently selected contraband for buy/sell operations
 let lastMafiaPriceUpdateTime = 0; // Timestamp for last Mafia price update
 const MAFIA_PRICE_UPDATE_INTERVAL = 15000; // Update prices every 15 seconds (simulating "by minute")
@@ -284,34 +282,51 @@ function mousePressed() {
 
 
         // Buy/Sell buttons (quick buy/sell 1 for each row)
-        const buySellBtnWidth = width * 0.06; // Slightly smaller to fit better
-        const buySellBtnHeight = height * 0.04; // Slightly smaller
-        const buySellGap = width * 0.005; // Reduced gap
-
-        let tableX = width * 0.1; // Keep consistent with drawContrabandTable
-        let colWidth = width * 0.15; // Keep consistent
-        let tableRowHeight = height * 0.07; // Keep consistent
-        let tableYStart = height * 0.25;
+        // Sync button positions with drawContrabandTable
+        const tableX = width * 0.05;
+        const tableY = height * 0.18;
+        const colWidth = width * 0.19;
+        const actionColWidth = width * 0.19;
+        const rowHeight = height * 0.06;
+        const btnPadding = 20;
 
         for (let i = 0; i < contrabandTypes.length; i++) {
             const item = contrabandTypes[i];
-            // Position buttons clearly to the right of the "Owned" column
-            const buyBtnX = tableX + colWidth * 2.5 + 5; // Start right after "Owned" column
-            const sellBtnX = buyBtnX + buySellBtnWidth + buySellGap;
-            const btnY = tableYStart + tableRowHeight * (i + 1) + (tableRowHeight - buySellBtnHeight * 2 - buySellGap) / 2; // Vertically center the two buttons
+            const yPos = tableY + rowHeight * (i + 1);
 
-            const buyBtn = { x: buyBtnX, y: btnY, width: buySellBtnWidth, height: buySellBtnHeight };
-            const sellBtn = { x: sellBtnX, y: btnY + buySellBtnHeight + buySellGap, width: buySellBtnWidth, height: buySellBtnHeight };
+            // Button sizes and positions must match drawContrabandTable
+            const buyBtnWidth = actionColWidth * 0.45;
+            const buyBtnHeight = rowHeight * 0.4;
+            const btnXOffset = tableX + colWidth * 2.5 + (actionColWidth - (buyBtnWidth * 2 + btnPadding / 2)) / 2;
+
+            const buyBtn = {
+                x: btnXOffset,
+                y: yPos + rowHeight / 2 - buyBtnHeight / 2,
+                width: buyBtnWidth,
+                height: buyBtnHeight
+            };
+            const sellBtn = {
+                x: btnXOffset + buyBtnWidth + btnPadding / 2,
+                y: yPos + rowHeight / 2 - buyBtnHeight / 2,
+                width: buyBtnWidth,
+                height: buyBtnHeight
+            };
+
+            noFill();
+stroke(255, 0, 0);
+rect(buyBtn.x, buyBtn.y, buyBtn.width, buyBtn.height);
+rect(sellBtn.x, sellBtn.y, sellBtn.width, sellBtn.height);
+noStroke();
 
             if (isMouseOver(buyBtn)) {
-                selectedContraband = item; // Select for context
-                mafiaBuySellQuantity = ""; // Clear input
-                handleBuySellContraband(item, 'buy', 1); // Buy 1 by default
+                selectedContraband = item;
+                mafiaBuySellQuantity = "";
+                handleBuySellContraband(item, 'buy', 1);
                 return;
             } else if (isMouseOver(sellBtn)) {
-                selectedContraband = item; // Select for context
-                mafiaBuySellQuantity = ""; // Clear input
-                handleBuySellContraband(item, 'sell', 1); // Sell 1 by default
+                selectedContraband = item;
+                mafiaBuySellQuantity = "";
+                handleBuySellContraband(item, 'sell', 1);
                 return;
             }
         }
@@ -363,31 +378,7 @@ function mousePressed() {
             }
         }
         // If clicking on a table row (not the buttons), select that contraband for input
-        else {
-            tableX = width * 0.1;
-            colWidth = width * 0.15;
-            tableRowHeight = height * 0.07;
-            tableYStart = height * 0.25;
-
-            // Clickable area for each row (excluding quick buy/sell buttons)
-            // It should cover the "Contraband", "Price", and "Owned" columns.
-            const rowClickableWidth = colWidth * 2.5; // Covers first three columns for selection
-            for (let i = 0; i < contrabandTypes.length; i++) {
-                const item = contrabandTypes[i];
-                const rowRect = {
-                    x: tableX,
-                    y: tableYStart + tableRowHeight * (i + 1),
-                    width: rowClickableWidth,
-                    height: tableRowHeight
-                };
-                if (isMouseOver(rowRect)) {
-                    selectedContraband = item;
-                    mafiaBuySellQuantity = ""; // Clear input when new item selected
-                    addGameMessage(`Selected ${item}. Enter quantity below to buy/sell.`, 'info');
-                    return;
-                }
-            }
-        }
+        // (Removed code for selecting contraband and showing input)
     }
 }
 
@@ -401,13 +392,7 @@ function keyPressed() {
         }
     }
     // Mafia Wars buy/sell quantity input
-    else if (currentGameState === 'mafiaWars' && selectedContraband !== null && mafiaInputFocused) {
-        if (keyCode === BACKSPACE) {
-            mafiaBuySellQuantity = mafiaBuySellQuantity.substring(0, mafiaBuySellQuantity.length - 1);
-        } else if (key >= '0' && key <= '9') {
-            mafiaBuySellQuantity += key;
-        }
-    }
+    // Mafia Wars buy/sell quantity input removed
 }
 
 // Helper function to check if mouse is over a button
@@ -416,11 +401,7 @@ function isMouseOver(button) {
            mouseY > button.y && mouseY < button.y + button.height;
 }
 
-// Helper for Mafia input focus
-function isMouseOverMafiaInput(inputX, inputY, inputWidth, inputHeight) {
-    return mouseX > inputX && mouseX < inputX + inputWidth &&
-           mouseY > inputY && mouseY < inputY + inputHeight;
-}
+// Mafia input focus helper removed
 
 // --- Canvas Title Drawing ---
 function setupCanvasTitle() {
@@ -758,9 +739,7 @@ function drawMafiaWarsScreen() {
     textAlign(CENTER, TOP);
     text("MAFIA WARS", width / 2, height * 0.06);
 
-    // Illegal Wallet button (retro button style)
-    const btnIllegalWallet = { x: width * 0.02, y: height * 0.18, width: width * 0.18, height: height * 0.06, text: 'Illegal Wallet', color: color(80, 80, 80) };
-    drawButton(btnIllegalWallet);
+    // (Illegal Wallet button removed)
 
     // Current Location Display (muted)
     fill(180, 200, 210);
@@ -800,11 +779,11 @@ function drawMafiaWarsScreen() {
 
 function drawContrabandTable() {
     // Make the contraband table bigger and more prominent
-    const tableX = width * 0.05; // Further left
-    const tableY = height * 0.18; // Higher up
-    const colWidth = width * 0.19; // Wider columns
+    const tableX = width * 0.17; // Further left
+    const tableY = height * 0.25; // Higher up
+    const colWidth = width * 0.16; // Wider columns
     const actionColWidth = width * 0.19; // Wider action column
-    const rowHeight = height * 0.10; // Taller rows
+    const rowHeight = height * 0.09; // Shorter rows
     const padding = 20; // More padding inside cells
 
     // Table Header
@@ -867,6 +846,16 @@ function drawContrabandTable() {
             color: color(0),
             mutedText: currentGameState === 'mafiaWars'
         });
+
+        // --- DEBUG: Draw red rectangles over the clickable areas for Buy/Sell ---
+        push();
+        noFill();
+        stroke(255, 0, 0);
+        strokeWeight(2);
+        rect(btnXOffset, yPos + rowHeight / 2 - buyBtnHeight / 2, buyBtnWidth, buyBtnHeight);
+        rect(btnXOffset + buyBtnWidth + padding / 2, yPos + rowHeight / 2 - buyBtnHeight / 2, buyBtnWidth, buyBtnHeight);
+        pop();
+       
     }
 
     // Border for the entire table
