@@ -90,8 +90,8 @@ let mafiaDailyBuys = 0;
 let mafiaDailySells = 0;
 
 // Game Goal and Day Limit
-const MONEY_GOAL = 100000; // User needs to get $100,000 
-const DAY_LIMIT = 365;    // Within 100 days
+const MONEY_GOAL = 500000; // User needs to get $100,000 
+const DAY_LIMIT = 100;    // Within 100 days
 
 // --- Global UI Elements ---
 let btnAdvanceDayGlobal; // Global button for advancing day
