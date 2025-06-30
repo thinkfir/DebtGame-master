@@ -77,6 +77,10 @@ const MAFIA_TRAVEL_COSTS = {
     'Houston': 250,
     'Denver': 200
 };
+// Min and max travel costs for volatility calculation
+const MIN_MAFIA_TRAVEL_COST = Math.min(...Object.values(MAFIA_TRAVEL_COSTS));
+const MAX_MAFIA_TRAVEL_COST = Math.max(...Object.values(MAFIA_TRAVEL_COSTS));
+
 
 // Global variables for Mafia Wars table layout (CONSISTENTLY DEFINED HERE)
 let mafiaTableX, mafiaTableY, mafiaColWidth, mafiaActionColWidth, mafiaRowHeight, mafiaBtnPadding;
@@ -87,7 +91,7 @@ let mafiaDailyBuys = 0;
 let mafiaDailySells = 0;
 
 // Game Goal and Day Limit
-const MONEY_GOAL = 10000; // User needs to get $10,000
+const MONEY_GOAL = 100000; // User needs to get $100,000 (changed from 1,000,000)
 const DAY_LIMIT = 100;    // Within 100 days
 
 // --- Global UI Elements ---
@@ -385,7 +389,7 @@ function setupCanvasTitle() {
     gameCanvasTitle = {
         text: "Money Mastermind ",
         textSize: width * 0.05, // Responsive text size
-        x: width / 2 * 1.05,
+        x: width / 2 * 1.05, // Centered title
         y: height * 0.07, // Positioned at the top
         color: color(239, 68, 68), // Red
         shadowColor: color(255, 0, 0), // Base for glow
@@ -555,7 +559,8 @@ function setupGlobalUIButtons() {
 
 // --- Mafia Wars Game Logic and Drawing ---
 function initializeMafiaWars() {
-    currentMafiaLocation = 'New York';
+    // Start in Denver as requested
+    currentMafiaLocation = 'Denver';
     mafiaContrabandPrices = generateMafiaPrices(currentMafiaLocation);
     mafiaPlayerInventory = {};
     contrabandTypes.forEach(type => {
@@ -586,6 +591,15 @@ function setupMafiaWarsLayoutConstants() {
 
 function generateMafiaPrices(location) {
     const prices = {};
+    const minMafiaVolatility = 0.4; // Base for lowest volatility city (Denver)
+    const maxMafiaVolatility = 1.0; // Base for highest volatility city (New York)
+
+    // Calculate effective volatility based on location's travel cost
+    const travelCost = MAFIA_TRAVEL_COSTS[location];
+    const normalizedCost = map(travelCost, MIN_MAFIA_TRAVEL_COST, MAX_MAFIA_TRAVEL_COST, 0, 1);
+    const effectiveVolatility = map(normalizedCost, 0, 1, minMafiaVolatility, maxMafiaVolatility);
+
+
     contrabandTypes.forEach(item => {
         let basePrice;
         // Base price ranges for different contraband types
@@ -593,26 +607,20 @@ function generateMafiaPrices(location) {
             case 'Bliss Dust': basePrice = random(10, 50); break;
             case 'Shadow Bloom': basePrice = random(1000, 5000); break;
             case 'Viper Venom': basePrice = random(200, 800); break;
-            case 'Crimson Haze': basePrice = random(5000, 15000); break;
+            case 'Crimson Haze': basePrice = random(5000, 15000); break; // Higher base for high-value contraband
             case 'Starlight Shard': basePrice = random(500, 2000); break;
             default: basePrice = random(50, 200);
         }
 
-        // Location-specific price adjustments
-        if (location === 'New York') {
-            if (item === 'Bliss Dust') basePrice *= random(0.8, 1.2); // Fluctuation
-            if (item === 'Shadow Bloom') basePrice *= random(1.1, 1.5); // Higher
-        } else if (location === 'Los Angeles') {
-            if (item === 'Viper Venom') basePrice *= random(0.7, 1.1); // Lower
-            if (item === 'Starlight Shard') basePrice *= random(1.0, 1.3); // Higher
-        } else if (location === 'Chicago') {
-            if (item === 'Crimson Haze') basePrice *= random(0.9, 1.3); // Moderate
-        }
-        // Add more location-specific logic as needed
+        // Price change based on base price and effective volatility
+        // This multiplier determines the absolute scale of fluctuation.
+        // For "up 10k" on a ~15k base, we need a high multiplier.
+        // 15000 * 0.8 (effectiveVolatility, if max) * random(-1,1) * X
+        // Let's use a dynamic multiplier to ensure large fluctuations, linked to effectiveVolatility
+        const fluctuationMagnitude = basePrice * effectiveVolatility * random(0.5, 1.5); // Adjusted to allow up to 10k fluctuations
+        let priceChange = random(-fluctuationMagnitude, fluctuationMagnitude);
 
-        // Add volatility
-        const volatility = random(0.1, 0.3); // 10-30% price fluctuation
-        let priceChange = basePrice * volatility * random(-1, 1);
+
         let finalPrice = parseFloat((basePrice + priceChange).toFixed(2));
         prices[item] = Math.max(5, finalPrice); // Ensure price doesn't go too low
     });
@@ -838,7 +846,7 @@ function drawContrabandTable() {
         // Buy button
         drawButton({
             x: btnXOffset,
-            y: yPos + rowHeight / 2 - buyBtnHeight / 2,
+            y: yPos + mafiaRowHeight / 2 - buyBtnHeight / 2,
             width: buyBtnWidth,
             height: buyBtnHeight,
             text: 'Buy',
@@ -849,7 +857,7 @@ function drawContrabandTable() {
         // Sell button
         drawButton({
             x: btnXOffset + buyBtnWidth + padding / 2,
-            y: yPos + rowHeight / 2 - buyBtnHeight / 2,
+            y: yPos + mafiaRowHeight / 2 - buyBtnHeight / 2,
             width: buyBtnWidth,
             height: buyBtnHeight,
             text: 'Sell',
@@ -939,13 +947,16 @@ function initializeStocks() {
         for (const symbol of region.stocks) {
             // Initial price generation
             const initialPrice = parseFloat((random(50, 200)).toFixed(2));
-            // Dividend as a percentage of initial price (e.g., 10%)
-            const dividendValue = parseFloat((initialPrice * random(0.08, 0.12)).toFixed(2)); // 8% to 12% of initial price
+            // Dividend is now a fixed 5% of initial price
+            const dividendValue = parseFloat((initialPrice * 0.05).toFixed(2)); // Changed to 5%
+
+            // Uniform, lower volatility for all stock market regions
+            const volatility = random(0.08, 0.25); // Original volatility range for stocks
 
             stocksData[symbol] = {
                 price: initialPrice,
                 prevPrice: 0, // Will be updated on first day advance
-                volatility: random(0.08, 0.25), // Increased volatility range
+                volatility: volatility, // Using uniform volatility
                 history: [], // To store price history if needed later
                 dividend: dividendValue // Added fixed daily dividend
             };
@@ -1566,7 +1577,7 @@ function drawFadingMessages() {
     // Determine the Y position for the newest message, and then stack upwards.
     let currentY = messageAreaTop + (MESSAGE_MAX_DISPLAY_HEIGHT_FACTOR * height) - messageLineHeight; // Start at the "bottom" of the display area for newest message
 
-    // Text shadow for readability on message text
+    // Text shadow for readability on text
     drawingContext.shadowOffsetX = 0;
     drawingContext.shadowOffsetY = 0;
     drawingContext.shadowBlur = 2; // Subtle shadow
