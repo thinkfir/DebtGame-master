@@ -80,8 +80,6 @@ const MAFIA_TRAVEL_COSTS = {
 
 // Global variables for Mafia Wars table layout (CONSISTENTLY DEFINED HERE)
 let mafiaTableX, mafiaTableY, mafiaColWidth, mafiaActionColWidth, mafiaRowHeight, mafiaBtnPadding;
-// Removed mafiaInputX, mafiaInputY, mafiaInputWidth, mafiaInputHeight, mafiaButtonWidth, mafiaPadding as they are no longer needed for the input field
-// let mafiaInputX, mafiaInputY, mafiaInputWidth, mafiaInputHeight, mafiaButtonWidth, mafiaPadding;
 
 // Mafia Daily Transaction Limits
 const MAFIA_MAX_DAILY_TRANSACTIONS = 3;
@@ -335,7 +333,6 @@ function mousePressed() {
         }
 
         // Removed all explicit quantity buy/sell buttons and input field interaction
-        // No longer checking for clicks on mafiaInput, buyWithQtyBtn, sellWithQtyBtn
     }
 }
 
@@ -349,13 +346,6 @@ function keyPressed() {
         }
     }
     // Removed Mafia Wars explicit quantity input handling
-    // if (currentGameState === 'mafiaWars' && mafiaInputFocused) {
-    //     if (keyCode === BACKSPACE) {
-    //         mafiaBuySellQuantity = mafiaBuySellQuantity.substring(0, mafiaBuySellQuantity.length - 1);
-    //     } else if (key >= '0' && key <= '9' && mafiaBuySellQuantity.length < 5) { // Limit input length
-    //         mafiaBuySellQuantity += key;
-    //     }
-    // }
 }
 
 // Helper function to check if mouse is over a button
@@ -366,8 +356,6 @@ function isMouseOver(button) {
 
 // Mafia input focus helper - now unused for the main UI but kept for general reference if re-introduced
 let mafiaInputFocused = false;
-// mouseReleased is generally not used for simple button clicks in p5, mousePressed is more direct.
-// The logic for setting mafiaInputFocused was already moved to mousePressed.
 function mouseReleased() {
     // This function is often used for drag-and-drop or when a click completes after mouse up.
     // For simple button clicks, mousePressed is usually sufficient.
@@ -555,7 +543,6 @@ function initializeMafiaWars() {
     contrabandTypes.forEach(type => {
         mafiaPlayerInventory[type] = 0; // Initialize all contraband to 0
     });
-    // mafiaBuySellQuantity = ""; // Removed as input field is removed
     selectedContraband = null;
     mafiaInputFocused = false; // Initialize the focus state, though now unused
     lastMafiaPriceUpdateTime = millis(); // Initialize timestamp for dynamic prices
@@ -576,12 +563,6 @@ function setupMafiaWarsLayoutConstants() {
     mafiaBtnPadding = 20; // More padding inside cells
 
     // Removed specific input field constants as it's no longer used
-    // mafiaInputX = width * 0.38; // Shifted right for more space
-    // mafiaInputY = height * 0.68; // Adjusted Y, higher up to accommodate single-line travel buttons
-    // mafiaInputWidth = width * 0.2; // Increased input width
-    // mafiaInputHeight = height * 0.07; // Increased input height
-    // mafiaButtonWidth = width * 0.1; // Increased button width
-    // mafiaPadding = 20; // Increased space between elements
 }
 
 
@@ -828,7 +809,6 @@ function drawContrabandTable() {
         text(`$${mafiaContrabandPrices[item].toFixed(2)}`, tableX + colWidth * 1.5, yPos + rowHeight / 2);
         
         // Adjust the X position for "Owned" to space it away from buy/sell
-        // Moved from colWidth * 2.5 to colWidth * 2.3 for more spacing
         text(mafiaPlayerInventory[item], tableX + colWidth * 2.3, yPos + rowHeight / 2);
 
 
@@ -943,7 +923,8 @@ function initializeStocks() {
                 price: parseFloat((random(50, 200)).toFixed(2)), // Initial price
                 prevPrice: 0, // Will be updated on first day advance
                 volatility: random(0.08, 0.25), // Increased volatility range
-                history: [] // To store price history if needed later
+                history: [], // To store price history if needed later
+                dividend: parseFloat(random(0.1, 1.0).toFixed(2)) // Added fixed daily dividend
             };
         }
     }
@@ -1119,18 +1100,22 @@ function drawWalletScreen() {
     text("Your Portfolio", width / 2, height * 0.15);
 
     // Table design
+    // Adjusted colWidth for a new 'Dividend' column
+    const colWidth = width * 0.12; // Adjusted width for each column to fit 6 columns
     const tableYStart = height * 0.25;
-    const colWidth = width * 0.15;
     const rowHeight = height * 0.05;
-    const startX = width / 2 - (colWidth * 2.5); // Center the table
+    // Adjusted startX to center 6 columns: Symbol, Quantity, Avg. Price, Current Value, P/L, Daily Dividend
+    const totalTableWidth = colWidth * 6; // 6 columns
+    const startX = width / 2 - (totalTableWidth / 2);
 
     // Table background container
     fill(35, 45, 60, 220); // Darker, more opaque background
     stroke(80, 95, 110);
     strokeWeight(1);
-    rect(startX - 10, tableYStart - rowHeight * 0.8, colWidth * 5 + 20, (Object.keys(playerPortfolio).length + 1) * rowHeight + rowHeight * 0.6, 8); // Slightly rounded
+    // Adjusted width of background rectangle to fit new column
+    rect(startX - 10, tableYStart - rowHeight * 0.8, totalTableWidth + 20, (Object.keys(playerPortfolio).length + 1) * rowHeight + rowHeight * 0.6, 8); // Slightly rounded
 
-    // Table headers
+    // Table headers - Adjusted positions for 6 columns
     textSize(height * 0.023); // Slightly smaller header text
     fill(255, 230, 0); // Gold-yellow for headers
     textAlign(CENTER, CENTER);
@@ -1139,6 +1124,7 @@ function drawWalletScreen() {
     text("Avg. Price", startX + colWidth * 2.5, tableYStart);
     text("Current Value", startX + colWidth * 3.5, tableYStart);
     text("P/L", startX + colWidth * 4.5, tableYStart);
+    text("Daily Dividend", startX + colWidth * 5.5, tableYStart); // New header
 
     let currentY = tableYStart + rowHeight;
     let rowNumber = 0;
@@ -1149,6 +1135,7 @@ function drawWalletScreen() {
 
         const currentValue = item.quantity * currentStock.price;
         const profitLoss = currentValue - (item.quantity * item.avgPrice);
+        const dailyDividend = item.quantity * currentStock.dividend; // Calculate daily dividend
 
         // Alternating row background
         if (rowNumber % 2 === 0) {
@@ -1157,7 +1144,8 @@ function drawWalletScreen() {
             fill(45, 55, 70, 180); // Darker blue-gray for odd rows
         }
         noStroke();
-        rect(startX - 10, currentY - rowHeight * 0.5, colWidth * 5 + 20, rowHeight, 0); // Draw row background
+        // Adjusted width of row background to fit new column
+        rect(startX - 10, currentY - rowHeight * 0.5, totalTableWidth + 20, rowHeight, 0); // Draw row background
 
         fill(240, 245, 250); // Off-white for data text
         textSize(height * 0.018); // Smaller data text
@@ -1174,6 +1162,10 @@ function drawWalletScreen() {
         else plColor = color(180); // Neutral gray
         fill(plColor);
         text(`$${profitLoss.toFixed(2)}`, startX + colWidth * 4.5, currentY);
+
+        // Display Daily Dividend
+        fill(100, 255, 255); // Cyan for dividends
+        text(`$${dailyDividend.toFixed(2)}`, startX + colWidth * 5.5, currentY);
 
         currentY += rowHeight;
         rowNumber++;
@@ -1339,6 +1331,11 @@ function drawBuySellStockScreen(symbol) {
     fill(255, 180, 180); // Softer red for money
     detailY += detailLineSpacing;
     text(`Your Money: $${gameMoney.toLocaleString()}`, detailX, detailY);
+
+    // New: Display Daily Dividend of this stock
+    fill(100, 255, 255); // Cyan for dividends
+    detailY += detailLineSpacing;
+    text(`Daily Dividend: $${stock.dividend.toFixed(2)} per share`, detailX, detailY);
 
     // Quantity input (simulated)
     const inputX = width / 2 - (width * 0.2) / 2;
@@ -1645,6 +1642,20 @@ function advanceDay() {
     // Reset daily buy/sell counts for Mafia Wars
     mafiaDailyBuys = 0;
     mafiaDailySells = 0;
+
+    // Apply dividends from owned stocks
+    let totalDividends = 0;
+    for (const symbol in playerPortfolio) {
+        const ownedStock = playerPortfolio[symbol];
+        const stockData = stocksData[symbol];
+        if (ownedStock && stockData) {
+            totalDividends += ownedStock.quantity * stockData.dividend;
+        }
+    }
+    if (totalDividends > 0) {
+        gameMoney += totalDividends;
+        addGameMessage(`Received $${totalDividends.toFixed(2)} in dividends!`, 'success');
+    }
 
     if (currentGameState === 'stockMarket') {
         advanceStockPrices(); // Update stock prices when day advances if in stock market
