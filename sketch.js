@@ -80,7 +80,8 @@ const MAFIA_TRAVEL_COSTS = {
 
 // Global variables for Mafia Wars table layout (CONSISTENTLY DEFINED HERE)
 let mafiaTableX, mafiaTableY, mafiaColWidth, mafiaActionColWidth, mafiaRowHeight, mafiaBtnPadding;
-let mafiaInputX, mafiaInputY, mafiaInputWidth, mafiaInputHeight, mafiaButtonWidth, mafiaPadding;
+// Removed mafiaInputX, mafiaInputY, mafiaInputWidth, mafiaInputHeight, mafiaButtonWidth, mafiaPadding as they are no longer needed for the input field
+// let mafiaInputX, mafiaInputY, mafiaInputWidth, mafiaInputHeight, mafiaButtonWidth, mafiaPadding;
 
 // Mafia Daily Transaction Limits
 const MAFIA_MAX_DAILY_TRANSACTIONS = 3;
@@ -321,59 +322,25 @@ function mousePressed() {
             };
 
             if (isMouseOver(buyBtn)) {
-                selectedContraband = item;
-                // mafiaBuySellQuantity = ""; // Removed to not clear input for quick buy/sell
+                selectedContraband = item; // Keep selected contraband for feedback/messages
                 handleBuySellContraband(item, 'buy', 1); // Pass quantity 1 for quick buy
+                selectedContraband = null; // Clear selection after action
                 return;
             } else if (isMouseOver(sellBtn)) {
-                selectedContraband = item;
-                // mafiaBuySellQuantity = ""; // Removed to not clear input for quick buy/sell
+                selectedContraband = item; // Keep selected contraband for feedback/messages
                 handleBuySellContraband(item, 'sell', 1); // Pass quantity 1 for quick sell
+                selectedContraband = null; // Clear selection after action
                 return;
             }
         }
 
-        // Handle explicit quantity buy/sell buttons (if a specific contraband is selected)
-        if (selectedContraband) { // Only show/interact with input if an item is selected
-            // Now using the consistent global mafia input constants
-            // Smooth pill-shaped input box
-            const inputRadius = mafiaInputHeight / 2;
-            
-            // Check if the input field itself was clicked
-            const inputRect = { x: mafiaInputX, y: mafiaInputY, width: mafiaInputWidth, height: mafiaInputHeight };
-            if (isMouseOver(inputRect)) {
-                mafiaInputFocused = true;
-                addGameMessage("Input field active.", 'info');
-                return; // Prevent other clicks if input field is clicked
-            } else {
-                mafiaInputFocused = false; // Reset focus if clicked outside
-            }
-
-            if (mafiaBuySellQuantity !== "" && !isNaN(int(mafiaBuySellQuantity))) {
-                const qty = int(mafiaBuySellQuantity);
-                // Check if the buy with quantity button was pressed
-                const buyWithQtyBtn = { x: mafiaInputX + mafiaInputWidth + mafiaPadding, y: mafiaInputY, width: mafiaButtonWidth, height: mafiaInputHeight };
-                if (isMouseOver(buyWithQtyBtn)) {
-                    handleBuySellContraband(selectedContraband, 'buy', qty);
-                    mafiaBuySellQuantity = "";
-                    // selectedContraband = null; // Don't deselect to allow quick follow-up
-                    return;
-                }
-                // Check if the sell with quantity button was pressed
-                const sellWithQtyBtn = { x: buyWithQtyBtn.x + buyWithQtyBtn.width + mafiaPadding / 2, y: mafiaInputY, width: mafiaButtonWidth, height: mafiaInputHeight };
-                if (isMouseOver(sellWithQtyBtn)) {
-                    handleBuySellContraband(selectedContraband, 'sell', qty);
-                    mafiaBuySellQuantity = "";
-                    // selectedContraband = null; // Don't deselect to allow quick follow-up
-                    return;
-                }
-            }
-        }
+        // Removed all explicit quantity buy/sell buttons and input field interaction
+        // No longer checking for clicks on mafiaInput, buyWithQtyBtn, sellWithQtyBtn
     }
 }
 
 function keyPressed() {
-    // Stock buy/sell quantity input
+    // Stock buy/sell quantity input (remains as this is for stock market)
     if (currentGameState === 'buySellStock') {
         if (keyCode === BACKSPACE) {
             buySellQuantity = buySellQuantity.substring(0, buySellQuantity.length - 1);
@@ -381,14 +348,14 @@ function keyPressed() {
             buySellQuantity += key;
         }
     }
-    // Mafia Wars explicit quantity input
-    if (currentGameState === 'mafiaWars' && mafiaInputFocused) {
-        if (keyCode === BACKSPACE) {
-            mafiaBuySellQuantity = mafiaBuySellQuantity.substring(0, mafiaBuySellQuantity.length - 1);
-        } else if (key >= '0' && key <= '9' && mafiaBuySellQuantity.length < 5) { // Limit input length
-            mafiaBuySellQuantity += key;
-        }
-    }
+    // Removed Mafia Wars explicit quantity input handling
+    // if (currentGameState === 'mafiaWars' && mafiaInputFocused) {
+    //     if (keyCode === BACKSPACE) {
+    //         mafiaBuySellQuantity = mafiaBuySellQuantity.substring(0, mafiaBuySellQuantity.length - 1);
+    //     } else if (key >= '0' && key <= '9' && mafiaBuySellQuantity.length < 5) { // Limit input length
+    //         mafiaBuySellQuantity += key;
+    //     }
+    // }
 }
 
 // Helper function to check if mouse is over a button
@@ -397,14 +364,13 @@ function isMouseOver(button) {
            mouseY > button.y && mouseY < button.y + button.height;
 }
 
-// Mafia input focus helper
+// Mafia input focus helper - now unused for the main UI but kept for general reference if re-introduced
 let mafiaInputFocused = false;
-// Renamed mouseClicked to mouseReleased to avoid conflicts if needed, but for p5 it's often better to just use mousePressed
-// The logic for setting mafiaInputFocused is now moved directly into mousePressed in the mafiaWars state
+// mouseReleased is generally not used for simple button clicks in p5, mousePressed is more direct.
+// The logic for setting mafiaInputFocused was already moved to mousePressed.
 function mouseReleased() {
     // This function is often used for drag-and-drop or when a click completes after mouse up.
     // For simple button clicks, mousePressed is usually sufficient.
-    // The mafiaInputFocused logic has been moved to mousePressed for direct interaction.
 }
 
 
@@ -545,15 +511,15 @@ function drawButton(button) {
         cursor(ARROW);
     }
 
-    // No border/stroke for button background
+    // Apply button background color
     noStroke();
     fill(btnColor);
 
-    // Pill shape
+    // Pill shape with rounded corners
     const buttonRadius = button.height / 2;
     rect(button.x, button.y, button.width, button.height, buttonRadius);
 
-    // Retro pixel font, no glow
+    // Retro pixel font, no glow for text
     textFont('monospace');
     fill(textColor);
     noStroke(); // Ensure no stroke on text
@@ -589,9 +555,9 @@ function initializeMafiaWars() {
     contrabandTypes.forEach(type => {
         mafiaPlayerInventory[type] = 0; // Initialize all contraband to 0
     });
-    mafiaBuySellQuantity = "";
+    // mafiaBuySellQuantity = ""; // Removed as input field is removed
     selectedContraband = null;
-    mafiaInputFocused = false; // Initialize the focus state
+    mafiaInputFocused = false; // Initialize the focus state, though now unused
     lastMafiaPriceUpdateTime = millis(); // Initialize timestamp for dynamic prices
 
     // NEW: Initialize daily transaction counts
@@ -609,13 +575,13 @@ function setupMafiaWarsLayoutConstants() {
     mafiaRowHeight = height * 0.09; // Shorter rows
     mafiaBtnPadding = 20; // More padding inside cells
 
-    // Mafia Input and Buttons Layout
-    mafiaInputX = width * 0.38; // Shifted right for more space
-    mafiaInputY = height * 0.68; // Adjusted Y, higher up to accommodate single-line travel buttons
-    mafiaInputWidth = width * 0.2; // Increased input width
-    mafiaInputHeight = height * 0.07; // Increased input height
-    mafiaButtonWidth = width * 0.1; // Increased button width
-    mafiaPadding = 20; // Increased space between elements
+    // Removed specific input field constants as it's no longer used
+    // mafiaInputX = width * 0.38; // Shifted right for more space
+    // mafiaInputY = height * 0.68; // Adjusted Y, higher up to accommodate single-line travel buttons
+    // mafiaInputWidth = width * 0.2; // Increased input width
+    // mafiaInputHeight = height * 0.07; // Increased input height
+    // mafiaButtonWidth = width * 0.1; // Increased button width
+    // mafiaPadding = 20; // Increased space between elements
 }
 
 
@@ -791,7 +757,7 @@ function drawMafiaWarsScreen() {
     // Contraband Price and Inventory Table
     drawContrabandTable();
 
-    // Buy/Sell Input and Buttons (still drawn by drawBuySellInput if needed, currently empty)
+    // Buy/Sell Input and Buttons (now intentionally empty `drawBuySellInput` function)
     drawBuySellInput();
 
     // Location Travel Buttons
@@ -861,9 +827,9 @@ function drawContrabandTable() {
         text(item, tableX + colWidth * 0.5, yPos + rowHeight / 2);
         text(`$${mafiaContrabandPrices[item].toFixed(2)}`, tableX + colWidth * 1.5, yPos + rowHeight / 2);
         
-        // Adjust the X position for "Owned" to space it from buy/sell
-        // This moves the owned text slightly to the left relative to its column center
-        text(mafiaPlayerInventory[item], tableX + colWidth * 2.5 - (colWidth * 0.05), yPos + rowHeight / 2); // 0.05 is an example offset
+        // Adjust the X position for "Owned" to space it away from buy/sell
+        // Moved from colWidth * 2.5 to colWidth * 2.3 for more spacing
+        text(mafiaPlayerInventory[item], tableX + colWidth * 2.3, yPos + rowHeight / 2);
 
 
         // Buy/Sell buttons for each row (quick buy/sell 1)
@@ -921,42 +887,7 @@ function drawContrabandTable() {
 
 
 function drawBuySellInput() {
-    // This function is currently empty, as the simple buy/sell buttons are handled within drawContrabandTable.
-    // If you wish to re-introduce a separate input field for specific quantities, uncomment and use this function.
-
-    // Example of re-introducing an input field:
-    if (selectedContraband) {
-        const inputX = mafiaInputX;
-        const inputY = mafiaInputY;
-        const inputWidth = mafiaInputWidth;
-        const inputHeight = mafiaInputHeight;
-        const buttonWidth = mafiaButtonWidth;
-        const padding = mafiaPadding;
-
-        // Draw input field background
-        fill(30, 40, 50);
-        stroke(100, 115, 130);
-        strokeWeight(1);
-        rect(inputX, inputY, inputWidth, inputHeight, inputHeight / 2);
-
-        // Input text (blinking cursor if focused)
-        fill(240, 245, 250);
-        textSize(width * 0.022);
-        textAlign(CENTER, CENTER);
-        let currentInputText = mafiaBuySellQuantity;
-        if (mafiaInputFocused && floor(millis() / BLINK_INTERVAL) % 2 === 0) {
-            currentInputText += '|'; // Add blinking cursor
-        }
-        text(currentInputText || 'Enter Qty', inputX + inputWidth / 2, inputY + inputHeight / 2);
-
-        // Buy with quantity button
-        const buyWithQtyBtn = { x: inputX + inputWidth + padding, y: inputY, width: buttonWidth, height: inputHeight, text: 'Buy Qty', color: color(50, 180, 50) };
-        drawButton(buyWithQtyBtn);
-
-        // Sell with quantity button
-        const sellWithQtyBtn = { x: buyWithQtyBtn.x + buyWithQtyBtn.width + padding / 2, y: inputY, width: buttonWidth, height: inputHeight, text: 'Sell Qty', color: color(220, 50, 50) };
-        drawButton(sellWithQtyBtn);
-    }
+    // This function is now intentionally left blank as the explicit quantity input and buttons are removed.
 }
 
 
