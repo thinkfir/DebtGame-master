@@ -21,7 +21,7 @@ const MESSAGE_HOLD_DURATION = 2000;    // milliseconds for messages to stay full
 const MESSAGE_FADE_OUT_DURATION = 1500; // milliseconds for messages to fade out
 const MESSAGE_TOTAL_DURATION = MESSAGE_FADE_IN_DURATION + MESSAGE_HOLD_DURATION + MESSAGE_FADE_OUT_DURATION;
 
-const MESSAGE_MAX_DISPLAY_HEIGHT_FACTOR = 0.25; // Percentage of canvas height for message area
+const MESSAGE_MAX_DISPLAY_HEIGHT_FACTOR = 0.05; // Percentage of canvas height for message area
 const MESSAGE_LINE_HEIGHT_FACTOR = 0.03; // Percentage of canvas height for each message line
 
 // Constant for blinking effect
@@ -749,12 +749,7 @@ function drawMafiaWarsScreen() {
     // --- FULL RETRO OVERHAUL FOR MAFIA WARS (NO ULTRANEON TEXT) ---
     background(12, 8, 24); // Deep retro purple-black
 
-    // Retro border
-    stroke(80, 255, 180, 80);
-    strokeWeight(4);
-    noFill();
-    rect(width * 0.04, height * 0.04, width * 0.92, height * 0.92, 24);
-    noStroke();
+    // (Removed retro border)
 
     // Retro title (muted)
     fill(210, 220, 180);
@@ -804,13 +799,13 @@ function drawMafiaWarsScreen() {
 }
 
 function drawContrabandTable() {
-    // Increased table size and adjusted positions for "main thing" bigger
-    const tableX = width * 0.1; // Shifted further left
-    const tableY = height * 0.25;
-    const colWidth = width * 0.15; // Increased column width
-    const actionColWidth = width * 0.15; // Increased action column width
-    const rowHeight = height * 0.07; // Increased row height
-    const padding = 15; // Increased padding inside cells
+    // Make the contraband table bigger and more prominent
+    const tableX = width * 0.05; // Further left
+    const tableY = height * 0.18; // Higher up
+    const colWidth = width * 0.19; // Wider columns
+    const actionColWidth = width * 0.19; // Wider action column
+    const rowHeight = height * 0.10; // Taller rows
+    const padding = 20; // More padding inside cells
 
     // Table Header
     fill(40, 40, 40, 200); // Dark header background
@@ -883,45 +878,7 @@ function drawContrabandTable() {
 
 
 function drawBuySellInput() {
-    const inputAreaWidth = width * 0.7; // Wider area for input and buttons
-    const inputAreaX = width / 2 - inputAreaWidth / 2; // Centered
-    const inputY = height * 0.68; // Adjusted Y, significantly below table and above travel buttons
-    const inputWidth = width * 0.15; // Adjusted input width
-    const inputHeight = height * 0.06; // Adjusted input height
-    const buttonWidth = width * 0.09; // Adjusted button width
-    const padding = 15; // Adjusted space between elements
-
-    // Label for input
-    fill(240);
-    textSize(width * 0.018); // Adjusted label text size
-    textAlign(LEFT, CENTER); // Align left
-    // The "x" position for the text has been adjusted to prevent overlap with the input box,
-    // positioning it clearly to the left of the input area.
-    let labelText = `Quantity for ${selectedContraband || '...'}:`;
-    text(labelText, inputAreaX + width * 0.05, inputY + inputHeight / 2); // Adjusted X for label
-
-    // Calculate dynamic X for input field based on label length to ensure no overlap
-    let calculatedLabelWidth = textWidth(labelText);
-    const actualInputX = inputAreaX + width * 0.05 + calculatedLabelWidth + padding;
-
-    // Input field background
-    fill(30, 40, 50);
-    stroke(100, 115, 130);
-    strokeWeight(1);
-    rect(actualInputX, inputY, inputWidth, inputHeight, 8);
-
-    fill(240, 245, 250);
-    textSize(width * 0.022); // Adjusted input text size
-    textAlign(CENTER, CENTER);
-    text(mafiaBuySellQuantity || 'Enter Qty', actualInputX + inputWidth / 2, inputY + inputHeight / 2);
-
-    // Buy/Sell buttons with quantity
-    const buyWithQtyBtnX = actualInputX + inputWidth + padding;
-    const sellWithQtyBtnX = buyWithQtyBtnX + buttonWidth + padding / 2; // Small gap between buy and sell
-    const btnY = inputY;
-
-    drawButton({ x: buyWithQtyBtnX, y: btnY, width: buttonWidth, height: inputHeight, text: 'Buy Qty', color: color(50, 180, 50) });
-    drawButton({ x: sellWithQtyBtnX, y: btnY, width: buttonWidth, height: inputHeight, text: 'Sell Qty', color: color(220, 50, 50) });
+    // This function is now intentionally left blank to remove the input area and buttons.
 }
 
 
@@ -1054,12 +1011,7 @@ function drawStockMarketScreen() {
     // --- FULL RETRO THEME FOR STOCK MARKET ---
     background(10, 12, 24); // Deep retro blue-black
 
-    // Retro border
-    stroke(80, 255, 180, 80);
-    strokeWeight(4);
-    noFill();
-    rect(width * 0.04, height * 0.04, width * 0.92, height * 0.92, 24);
-    noStroke();
+    // (Removed retro border)
 
     // Retro region panel
     fill(30, 40, 60, 180);
