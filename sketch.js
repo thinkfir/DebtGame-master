@@ -78,6 +78,10 @@ const MAFIA_TRAVEL_COSTS = {
     'Denver': 200
 };
 
+// Global variables for Mafia Wars table layout (CONSISTENTLY DEFINED HERE)
+let mafiaTableX, mafiaTableY, mafiaColWidth, mafiaActionColWidth, mafiaRowHeight, mafiaBtnPadding;
+let mafiaInputX, mafiaInputY, mafiaInputWidth, mafiaInputHeight, mafiaButtonWidth, mafiaPadding;
+
 
 // --- Global UI Elements ---
 let btnAdvanceDayGlobal; // New global button for advancing day
@@ -102,6 +106,7 @@ function setup() {
     setupMainMenuButtons(); // Call once at start
     setupStockMarketButtons(); // Set up stock market specific buttons (done once as their relative position is stable)
     setupGlobalUIButtons(); // Setup global buttons
+    setupMafiaWarsLayoutConstants(); // Setup Mafia Wars layout constants initially
 
     // Initialize the game state display (will draw the mainMenu)
     setGameState(currentGameState);
@@ -156,6 +161,7 @@ function windowResized() {
     setupMainMenuButtons(); // Re-calculate main menu button positions
     setupStockMarketButtons(); // Re-calculate stock market specific button positions
     setupGlobalUIButtons(); // Recalculate global button positions
+    setupMafiaWarsLayoutConstants(); // Recalculate Mafia Wars layout constants
 }
 
 function mousePressed() {
@@ -282,41 +288,34 @@ function mousePressed() {
 
 
         // Buy/Sell buttons (quick buy/sell 1 for each row)
-        // Sync button positions with drawContrabandTable
-        const tableX = width * 0.05;
-        const tableY = height * 0.18;
-        const colWidth = width * 0.19;
-        const actionColWidth = width * 0.19;
-        const rowHeight = height * 0.06;
-        const btnPadding = 20;
+        // Now using the consistent global mafia table constants
+        const buyBtnWidth = mafiaActionColWidth * 0.45;
+        const buyBtnHeight = mafiaRowHeight * 0.4;
+        const btnXOffset = mafiaTableX + mafiaColWidth * 2.5 + (mafiaActionColWidth - (buyBtnWidth * 2 + mafiaBtnPadding / 2)) / 2;
 
         for (let i = 0; i < contrabandTypes.length; i++) {
             const item = contrabandTypes[i];
-            const yPos = tableY + rowHeight * (i + 1);
-
-            // Button sizes and positions must match drawContrabandTable
-            const buyBtnWidth = actionColWidth * 0.45;
-            const buyBtnHeight = rowHeight * 0.4;
-            const btnXOffset = tableX + colWidth * 2.5 + (actionColWidth - (buyBtnWidth * 2 + btnPadding / 2)) / 2;
+            const yPos = mafiaTableY + mafiaRowHeight * (i + 1);
 
             const buyBtn = {
                 x: btnXOffset,
-                y: yPos + rowHeight / 2 - buyBtnHeight / 2,
+                y: yPos + mafiaRowHeight / 2 - buyBtnHeight / 2,
                 width: buyBtnWidth,
                 height: buyBtnHeight
             };
             const sellBtn = {
-                x: btnXOffset + buyBtnWidth + btnPadding / 2,
-                y: yPos + rowHeight / 2 - buyBtnHeight / 2,
+                x: btnXOffset + buyBtnWidth + mafiaBtnPadding / 2,
+                y: yPos + mafiaRowHeight / 2 - buyBtnHeight / 2,
                 width: buyBtnWidth,
                 height: buyBtnHeight
             };
 
-            noFill();
-stroke(255, 0, 0);
-rect(buyBtn.x, buyBtn.y, buyBtn.width, buyBtn.height);
-rect(sellBtn.x, sellBtn.y, sellBtn.width, sellBtn.height);
-noStroke();
+            // Removed temporary red rects here.
+            // noFill();
+            // stroke(255, 0, 0);
+            // rect(buyBtn.x, buyBtn.y, buyBtn.width, buyBtn.height);
+            // rect(sellBtn.x, sellBtn.y, sellBtn.width, sellBtn.height);
+            // noStroke();
 
             if (isMouseOver(buyBtn)) {
                 selectedContraband = item;
@@ -332,19 +331,13 @@ noStroke();
         }
 
         // Handle explicit quantity buy/sell buttons
-        const inputX = width * 0.38; // Shifted right for more space
-        const inputY = height * 0.68; // Adjusted Y, higher up to accommodate single-line travel buttons
-        const inputWidth = width * 0.2; // Increased input width
-        const inputHeight = height * 0.07; // Increased input height
-        const buttonWidth = width * 0.1; // Increased button width
-        const padding = 20; // Increased space between elements
-
+        // Now using the consistent global mafia input constants
         // Smooth pill-shaped input box
-        const inputRadius = inputHeight / 2;
+        const inputRadius = mafiaInputHeight / 2;
         fill(30, 40, 50);
         stroke(100, 115, 130);
         strokeWeight(1);
-        rect(inputX, inputY, inputWidth, inputHeight, inputRadius);
+        rect(mafiaInputX, mafiaInputY, mafiaInputWidth, mafiaInputHeight, inputRadius);
 
         // Show "type..." when focused and empty
         noStroke();
@@ -356,12 +349,12 @@ noStroke();
             fill(180, 180, 180);
             mafiaInputDisplay = "type...";
         }
-        text(mafiaInputDisplay || 'Enter Qty', inputX + inputWidth / 2, inputY + inputHeight / 2);
+        text(mafiaInputDisplay || 'Enter Qty', mafiaInputX + mafiaInputWidth / 2, mafiaInputY + mafiaInputHeight / 2);
 
         if (selectedContraband && mafiaBuySellQuantity !== "" && !isNaN(int(mafiaBuySellQuantity))) {
             const qty = int(mafiaBuySellQuantity);
             // Check if the buy with quantity button was pressed
-            const buyWithQtyBtn = { x: inputX + inputWidth + padding, y: inputY, width: buttonWidth, height: inputHeight };
+            const buyWithQtyBtn = { x: mafiaInputX + mafiaInputWidth + mafiaPadding, y: mafiaInputY, width: mafiaButtonWidth, height: mafiaInputHeight };
             if (isMouseOver(buyWithQtyBtn)) { // FIXED: Added calls to handleBuySellContraband
                 handleBuySellContraband(selectedContraband, 'buy', qty);
                 mafiaBuySellQuantity = "";
@@ -369,7 +362,7 @@ noStroke();
                 return;
             }
             // Check if the sell with quantity button was pressed
-            const sellWithQtyBtn = { x: buyWithQtyBtn.x + buyWithQtyBtn.width + padding / 2, y: inputY, width: buttonWidth, height: inputHeight };
+            const sellWithQtyBtn = { x: buyWithQtyBtn.x + buyWithQtyBtn.width + mafiaPadding / 2, y: mafiaInputY, width: mafiaButtonWidth, height: mafiaInputHeight };
             if (isMouseOver(sellWithQtyBtn)) { // FIXED: Added calls to handleBuySellContraband
                 handleBuySellContraband(selectedContraband, 'sell', qty);
                 mafiaBuySellQuantity = "";
@@ -391,7 +384,6 @@ function keyPressed() {
             buySellQuantity += key;
         }
     }
-    // Mafia Wars buy/sell quantity input
     // Mafia Wars buy/sell quantity input removed
 }
 
@@ -586,8 +578,29 @@ function initializeMafiaWars() {
     });
     mafiaBuySellQuantity = "";
     selectedContraband = null;
+    mafiaInputFocused = false; // Initialize the focus state
     lastMafiaPriceUpdateTime = millis(); // Initialize timestamp for dynamic prices
 }
+
+// NEW FUNCTION: Setup Mafia Wars Layout Constants
+function setupMafiaWarsLayoutConstants() {
+    // Mafia Contraband Table Layout
+    mafiaTableX = width * 0.17; // Further left
+    mafiaTableY = height * 0.25; // Higher up
+    mafiaColWidth = width * 0.16; // Wider columns
+    mafiaActionColWidth = width * 0.19; // Wider action column
+    mafiaRowHeight = height * 0.09; // Shorter rows
+    mafiaBtnPadding = 20; // More padding inside cells
+
+    // Mafia Input and Buttons Layout
+    mafiaInputX = width * 0.38; // Shifted right for more space
+    mafiaInputY = height * 0.68; // Adjusted Y, higher up to accommodate single-line travel buttons
+    mafiaInputWidth = width * 0.2; // Increased input width
+    mafiaInputHeight = height * 0.07; // Increased input height
+    mafiaButtonWidth = width * 0.1; // Increased button width
+    mafiaPadding = 20; // Increased space between elements
+}
+
 
 function generateMafiaPrices(location) {
     const prices = {};
@@ -730,16 +743,12 @@ function drawMafiaWarsScreen() {
     // --- FULL RETRO OVERHAUL FOR MAFIA WARS (NO ULTRANEON TEXT) ---
     background(12, 8, 24); // Deep retro purple-black
 
-    // (Removed retro border)
-
     // Retro title (muted)
     fill(210, 220, 180);
     textFont('Courier New');
     textSize(width * 0.045);
     textAlign(CENTER, TOP);
     text("MAFIA WARS", width / 2, height * 0.06);
-
-    // (Illegal Wallet button removed)
 
     // Current Location Display (muted)
     fill(180, 200, 210);
@@ -750,7 +759,7 @@ function drawMafiaWarsScreen() {
     // Contraband Price and Inventory Table
     drawContrabandTable();
 
-    // Buy/Sell Input and Buttons
+    // Buy/Sell Input and Buttons (still drawn by drawBuySellInput if needed, currently empty)
     drawBuySellInput();
 
     // Location Travel Buttons
@@ -778,13 +787,13 @@ function drawMafiaWarsScreen() {
 }
 
 function drawContrabandTable() {
-    // Make the contraband table bigger and more prominent
-    const tableX = width * 0.17; // Further left
-    const tableY = height * 0.25; // Higher up
-    const colWidth = width * 0.16; // Wider columns
-    const actionColWidth = width * 0.19; // Wider action column
-    const rowHeight = height * 0.09; // Shorter rows
-    const padding = 20; // More padding inside cells
+    // Now using the global Mafia Wars table layout constants
+    const tableX = mafiaTableX;
+    const tableY = mafiaTableY;
+    const colWidth = mafiaColWidth;
+    const actionColWidth = mafiaActionColWidth;
+    const rowHeight = mafiaRowHeight;
+    const padding = mafiaBtnPadding;
 
     // Table Header
     fill(40, 40, 40, 200); // Dark header background
@@ -846,16 +855,6 @@ function drawContrabandTable() {
             color: color(0),
             mutedText: currentGameState === 'mafiaWars'
         });
-
-        // --- DEBUG: Draw red rectangles over the clickable areas for Buy/Sell ---
-        push();
-        noFill();
-        stroke(255, 0, 0);
-        strokeWeight(2);
-        rect(btnXOffset, yPos + rowHeight / 2 - buyBtnHeight / 2, buyBtnWidth, buyBtnHeight);
-        rect(btnXOffset + buyBtnWidth + padding / 2, yPos + rowHeight / 2 - buyBtnHeight / 2, buyBtnWidth, buyBtnHeight);
-        pop();
-       
     }
 
     // Border for the entire table
@@ -868,6 +867,9 @@ function drawContrabandTable() {
 
 function drawBuySellInput() {
     // This function is now intentionally left blank to remove the input area and buttons.
+    // If you plan to re-introduce a specific buy/sell input for Mafia Wars,
+    // you would move the related drawing logic here and ensure its coordinates
+    // are consistent with mousePressed.
 }
 
 
@@ -999,8 +1001,6 @@ function setupStockMarketButtons() {
 function drawStockMarketScreen() {
     // --- FULL RETRO THEME FOR STOCK MARKET ---
     background(10, 12, 24); // Deep retro blue-black
-
-    // (Removed retro border)
 
     // Retro region panel
     fill(30, 40, 60, 180);
