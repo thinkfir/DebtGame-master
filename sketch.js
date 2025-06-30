@@ -67,6 +67,9 @@ let selectedContraband = null; // Currently selected contraband for buy/sell ope
 let lastMafiaPriceUpdateTime = 0; // Timestamp for last Mafia price update
 const MAFIA_PRICE_UPDATE_INTERVAL = 15000; // Update prices every 15 seconds (simulating "by minute")
 
+// --- Mafia Wars Action Buttons (global for sync between draw and mousePressed) ---
+let btnSteal = {}, btnGamble = {}, btnBribe = {};
+
 // Max inventory for contraband
 const MAFIA_MAX_INVENTORY_PER_ITEM = 30; // Max 30 units per contraband type
 
@@ -246,9 +249,33 @@ function mousePressed() {
             }
         }
     } else if (currentGameState === 'mafiaWars') {
+        // Ensure action buttons are up-to-date for hit detection
+        updateMafiaActionButtons();
+
+        // DEBUG: Log mouse and button positions
+        console.log(
+            "Mouse:", mouseX, mouseY,
+            "StealBtn:", btnSteal.x, btnSteal.y, btnSteal.width, btnSteal.height,
+            "isOverSteal:", isMouseOver(btnSteal)
+        );
+
         // GLOBAL NEXT DAY BUTTON CHECK (now located consistently on the right side below messages)
         if (isMouseOver(btnAdvanceDayGlobal)) {
             advanceDay();
+            return;
+        }
+
+        // --- NEW MECHANICS BUTTONS HANDLING ---
+        if (isMouseOver(btnSteal)) {
+            handleSteal();
+            return;
+        }
+        if (isMouseOver(btnGamble)) {
+            handleGamble();
+            return;
+        }
+        if (isMouseOver(btnBribe)) {
+            handleBribe();
             return;
         }
 
@@ -767,6 +794,12 @@ function drawMafiaWarsScreen() {
     drawButton(btnIllegalWallet);
 
     // --- ORGANIZED ACTION BUTTONS ON THE RIGHT ---
+    updateMafiaActionButtons();
+    drawButton(btnSteal);
+    drawButton(btnGamble);
+    drawButton(btnBribe);
+
+function updateMafiaActionButtons() {
     // Place all action buttons in a vertical stack below Next Day
     const actionBtnWidth = btnAdvanceDayGlobal.width;
     const actionBtnHeight = height * 0.06;
@@ -774,38 +807,27 @@ function drawMafiaWarsScreen() {
     const actionBtnYStart = btnAdvanceDayGlobal.y + btnAdvanceDayGlobal.height + height * 0.025;
     const actionBtnGap = height * 0.015;
 
-    // Steal button (risk/reward)
-    const btnSteal = {
-        x: actionBtnX,
-        y: actionBtnYStart,
-        width: actionBtnWidth,
-        height: actionBtnHeight,
-        text: 'Steal (Risky)',
-        color: color(120, 60, 180)
-    };
-    drawButton(btnSteal);
+    btnSteal.x = actionBtnX;
+    btnSteal.y = actionBtnYStart;
+    btnSteal.width = actionBtnWidth;
+    btnSteal.height = actionBtnHeight;
+    btnSteal.text = 'Steal (Risky)';
+    btnSteal.color = color(120, 60, 180);
 
-    // Gamble button
-    const btnGamble = {
-        x: actionBtnX,
-        y: actionBtnYStart + actionBtnHeight + actionBtnGap,
-        width: actionBtnWidth,
-        height: actionBtnHeight,
-        text: 'Gamble',
-        color: color(180, 120, 60)
-    };
-    drawButton(btnGamble);
+    btnGamble.x = actionBtnX;
+    btnGamble.y = actionBtnYStart + actionBtnHeight + actionBtnGap;
+    btnGamble.width = actionBtnWidth;
+    btnGamble.height = actionBtnHeight;
+    btnGamble.text = 'Gamble';
+    btnGamble.color = color(180, 120, 60);
 
-    // Bribe button
-    const btnBribe = {
-        x: actionBtnX,
-        y: actionBtnYStart + 2 * (actionBtnHeight + actionBtnGap),
-        width: actionBtnWidth,
-        height: actionBtnHeight,
-        text: 'Bribe Boss',
-        color: color(200, 180, 60)
-    };
-    drawButton(btnBribe);
+    btnBribe.x = actionBtnX;
+    btnBribe.y = actionBtnYStart + 2 * (actionBtnHeight + actionBtnGap);
+    btnBribe.width = actionBtnWidth;
+    btnBribe.height = actionBtnHeight;
+    btnBribe.text = 'Bribe Boss';
+    btnBribe.color = color(200, 180, 60);
+}
 
     // Current Location Display (muted)
     fill(180, 200, 210);
