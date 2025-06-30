@@ -106,7 +106,7 @@ function setup() {
     initializeMafiaWars(); // Now initializes daily limits too
 
     // Initial game message
-    addGameMessage("Welcome to Debt Game!");
+    addGameMessage("Welcome to Money Mastermind!");
     addGameMessage(`Reach $${MONEY_GOAL.toLocaleString()} within ${DAY_LIMIT} days!`, 'info');
 
     // Setup title and button positions based on new full-screen canvas
@@ -383,9 +383,9 @@ function mouseReleased() {
 // --- Canvas Title Drawing ---
 function setupCanvasTitle() {
     gameCanvasTitle = {
-        text: "Debt Game",
+        text: "Money Mastermind ",
         textSize: width * 0.05, // Responsive text size
-        x: width / 2,
+        x: width / 2 * 1.05,
         y: height * 0.07, // Positioned at the top
         color: color(239, 68, 68), // Red
         shadowColor: color(255, 0, 0), // Base for glow
@@ -478,7 +478,7 @@ function drawMainMenu() {
     fill(255, 20, 200);
     drawingContext.shadowBlur = 16;
     drawingContext.shadowColor = '#ff00cc';
-    text("Choose Your Path", width / 2, height * 0.30);
+    text("Master Dashboard", width / 2, height * 0.30);
     drawingContext.shadowBlur = 0;
     drawingContext.shadowColor = 'rgba(0,0,0,0)';
 
@@ -488,7 +488,7 @@ function drawMainMenu() {
     fill(0, 255, 255);
     drawingContext.shadowBlur = 10;
     drawingContext.shadowColor = '#00ffff';
-    text("Make a Million Dollars!", width / 2, height * 0.38);
+    text("Get Rich!", width / 2, height * 0.38);
     drawingContext.shadowBlur = 0;
     drawingContext.shadowColor = 'rgba(0,0,0,0)';
 
