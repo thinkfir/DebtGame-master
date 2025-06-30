@@ -9,7 +9,7 @@
 
 ## Game Objective
 
-**Goal:** Reach **$100,000** within **365 days**.
+**Goal:** Reach **$500,000** within **100 days**.
 
 ---
 
